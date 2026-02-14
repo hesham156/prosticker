@@ -3,7 +3,6 @@ import {
 } from 'firebase/auth';
 import {
     collection,
-    addDoc,
     setDoc,
     updateDoc,
     deleteDoc,

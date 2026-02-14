@@ -1,10 +1,10 @@
 // Fix User Documents Script
 // This script migrates user documents from random IDs to UID-based IDs
 
-import { db } from './config/firebase';
+import { db } from '../config/firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
-async function fixUserDocuments() {
+export async function fixUserDocuments() {
     console.log('🔧 Starting user documents migration...');
 
     try {
@@ -43,8 +43,7 @@ async function fixUserDocuments() {
 
     } catch (error) {
         console.error('❌ Migration failed:', error);
+        throw error;
     }
 }
 
-// Run the migration
-fixUserDocuments();
