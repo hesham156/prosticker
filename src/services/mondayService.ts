@@ -3,7 +3,7 @@ import type { Order } from './orderService';
 
 const MONDAY_API_URL = 'https://api.monday.com/v2';
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYwMDEzMDI5NywiYWFpIjoxMSwidWlkIjo5NzQyOTUwNywiaWFkIjoiMjAyNS0xMi0yMlQwOTowNTozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTM3NTE4NzUsInJnbiI6InVzZTEifQ.qexht75pJCU5N6nTNGoQ9WFLJsenPKXndnVGfudaRmE';
-const MONDAY_BOARD_ID = '6001302977'; // Your board ID
+const MONDAY_BOARD_ID = '18396347159'; // Your board ID
 
 interface MondayColumn {
     [key: string]: string | number;
@@ -85,12 +85,14 @@ export async function createMondayItemFromOrder(order: Order): Promise<string | 
 
         if (order.status) {
             // Map status to Monday status column
+            // Monday Board status labels: {5: new جديد, 0: working on it اشتغل عليه, 1: Done تم}
             const statusMap: { [key: string]: string } = {
-                'pending-design': 'جاري التصميم',
-                'pending-production': 'جاري الإنتاج',
-                'completed': 'مكتمل'
+                'pending-design': 'working on it اشتغل عليه',
+                'pending-production': 'working on it اشتغل عليه',
+                'in-production': 'working on it اشتغل عليه',
+                'completed': 'Done تم'
             };
-            columnValues['status'] = statusMap[order.status] || order.status;
+            columnValues['status'] = statusMap[order.status] || 'new جديد';
         }
 
         // Create the mutation
@@ -136,10 +138,12 @@ export async function updateMondayItemStatus(
     newStatus: string
 ): Promise<boolean> {
     try {
+        // Monday Board status labels: {5: new جديد, 0: working on it اشتغل عليه, 1: Done تم}
         const statusMap: { [key: string]: string } = {
-            'pending-design': 'جاري التصميم',
-            'pending-production': 'جاري الإنتاج',
-            'completed': 'مكتمل'
+            'pending-design': 'working on it اشتغل عليه',
+            'pending-production': 'working on it اشتغل عليه',
+            'in-production': 'working on it اشتغل عليه',
+            'completed': 'Done تم'
         };
 
         const mutation = `
