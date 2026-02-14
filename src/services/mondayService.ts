@@ -66,8 +66,8 @@ export async function getMondayBoardColumns() {
  */
 export async function createMondayItemFromOrder(order: Order): Promise<string | null> {
     try {
-        // Format the item name
-        const itemName = `${order.customerName} - ${order.orderType}`;
+        // Format the item name using order number instead of customer name
+        const itemName = `${order.orderNumber} - ${order.orderType}`;
 
         // Prepare column values based on your Monday board structure
         const columnValues: MondayColumn = {};
