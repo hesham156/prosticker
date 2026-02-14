@@ -93,14 +93,14 @@ export async function createMondayItemFromOrder(
 
         if (order.status) {
             // Map status to Monday status column
-            // Monday Board status labels: {5: new جديد, 0: working on it اشتغل عليه, 1: Done تم}
+            // New board status labels: {5: جديد, 1: قيد التنفيذ, 15: جاهز للاستلام}
             const statusMap: { [key: string]: string } = {
-                'pending-design': 'working on it اشتغل عليه',
-                'pending-production': 'working on it اشتغل عليه',
-                'in-production': 'working on it اشتغل عليه',
-                'completed': 'Done تم'
+                'pending-design': 'قيد التنفيذ',
+                'pending-production': 'قيد التنفيذ',
+                'in-production': 'قيد التنفيذ',
+                'completed': 'جاهز للاستلام'
             };
-            columnValues['status'] = statusMap[order.status] || 'new جديد';
+            columnValues['status'] = statusMap[order.status] || 'جديد';
         }
 
         // Create the mutation
@@ -146,12 +146,12 @@ export async function updateMondayItemStatus(
     newStatus: string
 ): Promise<boolean> {
     try {
-        // Monday Board status labels: {5: new جديد, 0: working on it اشتغل عليه, 1: Done تم}
+        // New board status labels: {5: جديد, 1: قيد التنفيذ, 15: جاهز للاستلام}
         const statusMap: { [key: string]: string } = {
-            'pending-design': 'working on it اشتغل عليه',
-            'pending-production': 'working on it اشتغل عليه',
-            'in-production': 'working on it اشتغل عليه',
-            'completed': 'Done تم'
+            'pending-design': 'قيد التنفيذ',
+            'pending-production': 'قيد التنفيذ',
+            'in-production': 'قيد التنفيذ',
+            'completed': 'جاهز للاستلام'
         };
 
         const mutation = `
