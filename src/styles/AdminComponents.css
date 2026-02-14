@@ -1,0 +1,217 @@
+.employee-management,
+.all-orders-view {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.section-header h2 {
+    color: var(--textprimary);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+/* Table Styles */
+.employees-table,
+.orders-table {
+    overflow-x: auto;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.3);
+}
+
+.employees-table table,
+.orders-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.employees-table thead,
+.orders-table thead {
+    background: rgba(51, 65, 85, 0.5);
+}
+
+.employees-table th,
+.orders-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    border-bottom: 2px solid rgba(148, 163, 184, 0.1);
+}
+
+.employees-table tbody tr,
+.orders-table tbody tr {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    transition: all 0.2s;
+}
+
+.employees-table tbody tr:hover,
+.orders-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.employees-table td,
+.orders-table td {
+    padding: 1rem;
+    color: var(--text-primary);
+}
+
+/* Role Badge */
+.role-badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.role-sales {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.role-design {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.role-production {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.role-admin {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Delete Button */
+.btn-delete {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+}
+
+.btn-delete:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* View Button */
+.btn-view {
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.btn-view:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.btn-view:active {
+    transform: translateY(0);
+}
+
+/* Edit Button */
+.btn-edit {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.btn-edit:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.btn-edit:active {
+    transform: translateY(0);
+}
+
+
+/* Filters Bar */
+.filters-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 250px;
+}
+
+.status-filter {
+    min-width: 200px;
+}
+
+.orders-summary {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .employees-table,
+    .orders-table {
+        font-size: 0.875rem;
+    }
+
+    .employees-table th,
+    .employees-table td,
+    .orders-table th,
+    .orders-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .filters-bar {
+        flex-direction: column;
+    }
+
+    .search-input,
+    .status-filter {
+        width: 100%;
+    }
+}

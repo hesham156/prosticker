@@ -1,0 +1,384 @@
+.pending-orders {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.orders-grid .order-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: all 0.3s;
+}
+
+.orders-grid .order-card:hover {
+    border-color: rgba(255, 87, 34, 0.4);
+    box-shadow: 0 8px 20px rgba(255, 87, 34, 0.2);
+    transform: translateY(-2px);
+}
+
+.orders-grid .order-card.selected {
+    border-color: #FF5722;
+    box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.2);
+}
+
+.btn-design {
+    background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    margin-top: auto;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-design:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 87, 34, 0.4);
+}
+
+/* Design Modal */
+.design-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out;
+    overflow-y: auto;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.design-modal .modal-content {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 1px solid rgba(255, 87, 34, 0.2);
+    border-radius: 20px;
+    width: 95%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+    animation: slideUp 0.4s ease-out;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Scrollbar Styling */
+.design-modal .modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.design-modal .modal-content::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 10px;
+}
+
+.design-modal .modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 87, 34, 0.5);
+    border-radius: 10px;
+}
+
+.design-modal .modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 87, 34, 0.7);
+}
+
+.design-modal .modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 87, 34, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: rgba(30, 41, 59, 0.98);
+    backdrop-filter: blur(20px);
+    z-index: 10;
+    border-radius: 20px 20px 0 0;
+}
+
+.design-modal .modal-header h2 {
+    color: #fff;
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.design-modal .btn-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 87, 34, 0.15);
+    border: 1px solid rgba(255, 87, 34, 0.3);
+    color: #FF7043;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.design-modal .btn-close:hover {
+    background: rgba(255, 87, 34, 0.25);
+    border-color: rgba(255, 87, 34, 0.5);
+    transform: rotate(90deg);
+    color: #FF5722;
+}
+
+.design-modal .customer-info {
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, rgba(255, 87, 34, 0.12) 0%, rgba(255, 87, 34, 0.08) 100%);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.design-modal .customer-info h3 {
+    color: #fff;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.design-modal .customer-info p {
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.design-form {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Form Groups */
+.design-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.design-form .form-group label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.design-form .form-group input,
+.design-form .form-group select,
+.design-form .form-group textarea {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    color: #fff;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.design-form .form-group input:focus,
+.design-form .form-group select:focus,
+.design-form .form-group textarea:focus {
+    outline: none;
+    border-color: #FF5722;
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.1);
+}
+
+.design-form .form-group input::placeholder,
+.design-form .form-group textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Form Row (للحقول المتجاورة) */
+.design-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Error Messages */
+.design-form .form-group .error {
+    color: #fca5a5;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    animation: shake 0.3s ease;
+}
+
+.design-form .form-group .error::before {
+    content: "⚠";
+    font-size: 0.9rem;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+.design-form .error-message {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form Actions */
+.design-form .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.design-form .btn-cancel {
+    flex: 1;
+    padding: 0.9rem 1.5rem;
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.design-form .btn-cancel:hover {
+    background: rgba(148, 163, 184, 0.2);
+    border-color: rgba(148, 163, 184, 0.4);
+    transform: translateY(-2px);
+}
+
+.design-form .btn-submit {
+    flex: 2;
+    padding: 0.9rem 1.5rem;
+    background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%);
+    border: none;
+    color: white;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 87, 34, 0.3);
+}
+
+.design-form .btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(255, 87, 34, 0.4);
+}
+
+.design-form .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@media (max-width: 768px) {
+    .orders-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .design-modal {
+        padding: 0;
+    }
+
+    .design-modal .modal-content {
+        max-height: 100vh;
+        border-radius: 0;
+        width: 100%;
+    }
+
+    .design-modal .modal-header {
+        padding: 1.25rem 1.5rem;
+        border-radius: 0;
+    }
+
+    .design-modal .modal-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .design-modal .customer-info {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .design-form {
+        padding: 1.5rem;
+    }
+
+    .design-form .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .design-form .form-actions {
+        flex-direction: column;
+    }
+
+    .design-form .btn-cancel,
+    .design-form .btn-submit {
+        width: 100%;
+    }
+}

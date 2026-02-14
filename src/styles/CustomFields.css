@@ -1,0 +1,260 @@
+/* Custom Fields Manager */
+.custom-fields-manager {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: rgba(30, 41, 59, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+}
+
+.custom-fields-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.custom-fields-header h4 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.btn-add-field {
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.btn-add-field:hover {
+    background: rgba(99, 102, 241, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Existing Fields */
+.existing-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.custom-field-item {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.custom-field-item:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(15, 23, 42, 0.7);
+}
+
+.field-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.field-info label {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.field-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    width: fit-content;
+    text-transform: uppercase;
+}
+
+.custom-field-item input,
+.custom-field-item select {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: var(--text-primary);
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.custom-field-item input:focus,
+.custom-field-item select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.btn-remove-field {
+    width: 32px;
+    height: 32px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove-field:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.1);
+}
+
+/* Add Field Form */
+.add-field-form {
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.3);
+    border: 2px dashed rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.add-field-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.add-field-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.add-field-form label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Select Options */
+.select-options {
+    margin-bottom: 1rem;
+}
+
+.select-options label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.option-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.option-row input {
+    flex: 1;
+}
+
+.btn-remove-option {
+    width: 32px;
+    height: 32px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.btn-add-option {
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-option:hover {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+/* Form Actions */
+.add-field-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.btn-cancel {
+    padding: 0.5rem 1rem;
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--text-secondary);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-save {
+    padding: 0.5rem 1rem;
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-save:not(:disabled):hover {
+    background: rgba(34, 197, 94, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .custom-field-item {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .add-field-form .form-row {
+        grid-template-columns: 1fr;
+    }
+}
