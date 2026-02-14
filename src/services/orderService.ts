@@ -3,6 +3,7 @@ import {
     addDoc,
     updateDoc,
     doc,
+    getDoc,
     query,
     where,
     getDocs,
@@ -93,15 +94,34 @@ export const createOrder = async (orderData: Partial<Order>, userId: string): Pr
         const orderWithId = { ...newOrder, id: orderId } as Order;
 
         // Sync to Monday.com (non-blocking - don't fail if Monday fails)
-        createMondayItemFromOrder(orderWithId).then((mondayItemId) => {
-            if (mondayItemId) {
-                // Update order with Monday item ID for future reference
-                updateDoc(doc(db, 'orders', orderId), { mondayItemId });
-                console.log(`✅ Order ${orderId} synced to Monday (Item ID: ${mondayItemId})`);
+        // If designer is assigned, use their personal board, otherwise use default
+        (async () => {
+            try {
+                let designerBoardId: string | undefined;
+
+                // Fetch designer's Monday board ID if designer is assigned
+                if (orderData.assignedDesignerId) {
+                    const designerDoc = await getDoc(doc(db, 'users', orderData.assignedDesignerId));
+                    if (designerDoc.exists()) {
+                        const designerData = designerDoc.data();
+                        designerBoardId = designerData?.mondayBoardId;
+                        if (designerBoardId) {
+                            console.log(`🎯 Assigning to designer's board: ${designerBoardId}`);
+                        }
+                    }
+                }
+
+                const mondayItemId = await createMondayItemFromOrder(orderWithId, designerBoardId);
+
+                if (mondayItemId) {
+                    // Update order with Monday item ID for future reference
+                    await updateDoc(doc(db, 'orders', orderId), { mondayItemId });
+                    console.log(`✅ Order ${orderId} synced to Monday (Item ID: ${mondayItemId})`);
+                }
+            } catch (error) {
+                console.warn('⚠️ Monday sync failed, but order was created successfully:', error);
             }
-        }).catch((error) => {
-            console.warn('⚠️ Monday sync failed, but order was created successfully:', error);
-        });
+        })();
 
         return orderId;
     } catch (error: any) {

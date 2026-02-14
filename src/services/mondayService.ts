@@ -63,9 +63,17 @@ export async function getMondayBoardColumns() {
 
 /**
  * Create a new item in Monday board when a sales order is created
+ * @param order - The order to create item from
+ * @param targetBoardId - Optional specific board ID (e.g., designer's personal board)
  */
-export async function createMondayItemFromOrder(order: Order): Promise<string | null> {
+export async function createMondayItemFromOrder(
+    order: Order,
+    targetBoardId?: string
+): Promise<string | null> {
     try {
+        // Use designer's board if provided, otherwise use default board
+        const boardId = targetBoardId || MONDAY_BOARD_ID;
+
         // Format the item name using order number instead of customer name
         const itemName = `${order.orderNumber} - ${order.orderType}`;
 
@@ -110,7 +118,7 @@ export async function createMondayItemFromOrder(order: Order): Promise<string | 
         `;
 
         const variables = {
-            boardId: MONDAY_BOARD_ID,
+            boardId: boardId,
             itemName: itemName,
             columnValues: JSON.stringify(columnValues)
         };
@@ -119,7 +127,7 @@ export async function createMondayItemFromOrder(order: Order): Promise<string | 
 
         const mondayItemId = data.create_item?.id;
 
-        console.log(`✅ Created Monday item: ${itemName} (ID: ${mondayItemId})`);
+        console.log(`✅ Created Monday item: ${itemName} (ID: ${mondayItemId}) in Board: ${boardId}`);
 
         return mondayItemId;
 
