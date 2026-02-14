@@ -11,6 +11,7 @@ import {
     orderBy
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { createMondayItemFromOrder } from './mondayService';
 
 export interface Order {
     id?: string;
@@ -53,6 +54,9 @@ export interface Order {
     // Workflow timestamps
     sentToDesignAt?: Date | Timestamp;
     sentToProductionAt?: Date | Timestamp;
+
+    // Monday.com integration
+    mondayItemId?: string; // Store Monday item ID for future updates
 }
 
 export interface CustomField {
@@ -77,8 +81,25 @@ export const createOrder = async (orderData: Partial<Order>, userId: string): Pr
             sentToDesignAt: Timestamp.now()
         };
 
+        // Create order in Firebase
         const docRef = await addDoc(collection(db, 'orders'), newOrder);
-        return docRef.id;
+        const orderId = docRef.id;
+
+        // Add ID to order object for Monday sync
+        const orderWithId = { ...newOrder, id: orderId } as Order;
+
+        // Sync to Monday.com (non-blocking - don't fail if Monday fails)
+        createMondayItemFromOrder(orderWithId).then((mondayItemId) => {
+            if (mondayItemId) {
+                // Update order with Monday item ID for future reference
+                updateDoc(doc(db, 'orders', orderId), { mondayItemId });
+                console.log(`✅ Order ${orderId} synced to Monday (Item ID: ${mondayItemId})`);
+            }
+        }).catch((error) => {
+            console.warn('⚠️ Monday sync failed, but order was created successfully:', error);
+        });
+
+        return orderId;
     } catch (error: any) {
         throw new Error(error.message || 'Failed to create order');
     }
@@ -99,6 +120,17 @@ export const updateOrderWithDesign = async (
             status: 'pending-production',
             sentToProductionAt: Timestamp.now()
         });
+
+        // Update Monday status if item exists
+        const { updateMondayItemStatus } = await import('./mondayService');
+        const orderDoc = await getDocs(query(collection(db, 'orders'), where('__name__', '==', orderId)));
+        const order = orderDoc.docs[0]?.data() as Order;
+
+        if (order?.mondayItemId) {
+            updateMondayItemStatus(order.mondayItemId, 'pending-production').catch((error) => {
+                console.warn('⚠️ Failed to update Monday status:', error);
+            });
+        }
     } catch (error: any) {
         throw new Error(error.message || 'Failed to update order');
     }
@@ -139,6 +171,17 @@ export const updateOrderStatus = async (
         }
 
         await updateDoc(orderRef, updateData);
+
+        // Update Monday status if item exists
+        const { updateMondayItemStatus } = await import('./mondayService');
+        const orderDoc = await getDocs(query(collection(db, 'orders'), where('__name__', '==', orderId)));
+        const order = orderDoc.docs[0]?.data() as Order;
+
+        if (order?.mondayItemId) {
+            updateMondayItemStatus(order.mondayItemId, status).catch((error) => {
+                console.warn('⚠️ Failed to update Monday status:', error);
+            });
+        }
     } catch (error: any) {
         throw new Error(error.message || 'Failed to update status');
     }
