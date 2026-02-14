@@ -10,6 +10,7 @@ interface AddEmployeeForm {
     email: string;
     password: string;
     role: UserData['role'];
+    mondayBoardId?: string;
 }
 
 interface AddEmployeeModalProps {
@@ -35,7 +36,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
                 data.password,
                 data.fullName,
                 data.role,
-                userData.uid
+                userData.uid,
+                data.mondayBoardId || undefined
             );
 
             onSuccess();
@@ -110,6 +112,16 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ onClose, onSuccess 
                             <option value="admin">إدارة / Admin</option>
                         </select>
                         {errors.role && <span className="error">{errors.role.message}</span>}
+                    </div>
+
+                    <div className="form-group">
+                        <label>رقم Board في Monday / Monday Board ID</label>
+                        <input
+                            type="text"
+                            {...register('mondayBoardId')}
+                            placeholder="18396347159"
+                        />
+                        <small className="help-text">اختياري / Optional</small>
                     </div>
 
                     <div className="form-actions">

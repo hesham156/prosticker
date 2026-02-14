@@ -21,7 +21,8 @@ export const createEmployee = async (
     password: string,
     fullName: string,
     role: UserData['role'],
-    adminId: string
+    adminId: string,
+    mondayBoardId?: string
 ): Promise<string> => {
     try {
         // Create Firebase auth user
@@ -35,7 +36,8 @@ export const createEmployee = async (
             fullName,
             role,
             createdAt: Timestamp.now() as any,
-            createdBy: adminId
+            createdBy: adminId,
+            ...(mondayBoardId && { mondayBoardId }) // Add mondayBoardId if provided
         };
 
         // Use setDoc with user.uid as document ID instead of addDoc
@@ -47,17 +49,25 @@ export const createEmployee = async (
     }
 };
 
-// Update user role
+// Update employee data
+export const updateEmployee = async (
+    userId: string,
+    updates: Partial<Pick<UserData, 'fullName' | 'role' | 'mondayBoardId'>>
+): Promise<void> => {
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, updates);
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to update employee');
+    }
+};
+
+// Update user role (kept for backwards compatibility)
 export const updateUserRole = async (
     userId: string,
     role: UserData['role']
 ): Promise<void> => {
-    try {
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, { role });
-    } catch (error: any) {
-        throw new Error(error.message || 'Failed to update user role');
-    }
+    return updateEmployee(userId, { role });
 };
 
 // Fetch all employees

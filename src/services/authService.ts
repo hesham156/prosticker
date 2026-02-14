@@ -13,6 +13,7 @@ export interface UserData {
     fullName: string;
     role: 'sales' | 'design' | 'production' | 'admin';
     createdAt: Date;
+    mondayBoardId?: string; // Optional Monday.com board ID for this employee
 }
 
 // Login with email and password
