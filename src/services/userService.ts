@@ -76,6 +76,23 @@ export const fetchAllEmployees = async (): Promise<UserData[]> => {
     }
 };
 
+// Fetch designers only (for assignment)
+export const fetchDesigners = async (): Promise<UserData[]> => {
+    try {
+        const q = query(collection(db, 'users'), where('role', '==', 'design'));
+        const querySnapshot = await getDocs(q);
+        const designers: UserData[] = [];
+
+        querySnapshot.forEach((doc) => {
+            designers.push(doc.data() as UserData);
+        });
+
+        return designers;
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to fetch designers');
+    }
+};
+
 // Delete employee
 export const deleteEmployee = async (uid: string): Promise<void> => {
     try {

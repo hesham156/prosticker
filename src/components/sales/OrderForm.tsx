@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import { createOrder } from '../../services/orderService';
 import type { CustomField } from '../../services/orderService';
+import { fetchDesigners } from '../../services/userService';
+import type { UserData } from '../../services/authService';
 import { PRODUCT_TYPES, getProductTypeById, shouldShowField } from '../../config/productTypes';
 import type { ProductField } from '../../config/productTypes';
 import CustomFieldsManager from '../common/CustomFieldsManager';
@@ -14,6 +16,7 @@ interface OrderFormData {
     quantity: number;
     deliveryDate: string;
     salesNotes: string;
+    assignedDesignerId: string;
     [key: string]: any; // For dynamic product config fields
 }
 
@@ -27,6 +30,20 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [customFields, setCustomFields] = useState<CustomField[]>([]);
+    const [designers, setDesigners] = useState<UserData[]>([]);
+
+    // Fetch designers on component mount
+    useEffect(() => {
+        const loadDesigners = async () => {
+            try {
+                const designersList = await fetchDesigners();
+                setDesigners(designersList);
+            } catch (err) {
+                console.error('Failed to fetch designers:', err);
+            }
+        };
+        loadDesigners();
+    }, []);
 
     const selectedProductType = watch('productType');
     const productTypeConfig = getProductTypeById(selectedProductType);
@@ -124,6 +141,9 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                 });
             }
 
+            // Find selected designer name
+            const selectedDesigner = designers.find(d => d.uid === data.assignedDesignerId);
+
             // Create order with product configuration and custom fields
             await createOrder({
                 orderNumber: data.orderNumber,
@@ -133,6 +153,8 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                 quantity: Number(data.quantity),
                 deliveryDate: data.deliveryDate,
                 salesNotes: data.salesNotes || '',
+                assignedDesignerId: data.assignedDesignerId || undefined,
+                assignedDesignerName: selectedDesigner?.fullName || undefined,
                 customFields: customFields.length > 0 ? customFields : []
             }, userData.uid);
 
@@ -163,6 +185,19 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                         placeholder="ORD-001"
                     />
                     {errors.orderNumber && <span className="error">{errors.orderNumber.message}</span>}
+                </div>
+
+                {/* Designer Assignment */}
+                <div className="form-group">
+                    <label>المصمم المسؤول / Assigned Designer</label>
+                    <select {...register('assignedDesignerId')}>
+                        <option value="">بدون تحديد / Not Assigned</option>
+                        {designers.map(designer => (
+                            <option key={designer.uid} value={designer.uid}>
+                                {designer.fullName}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
 

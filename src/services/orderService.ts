@@ -28,6 +28,10 @@ export interface Order {
     createdBy: string;
     createdAt: Date | Timestamp;
 
+    // Designer Assignment (NEW)
+    assignedDesignerId?: string; // UID of designer assigned to this order
+    assignedDesignerName?: string; // Name for display purposes
+
     // Design Data (optional, added by Design role)
     designFileUrl?: string;
     dimensions?: string;
