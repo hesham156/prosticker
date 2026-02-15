@@ -2,7 +2,7 @@
 import type { Order } from './orderService';
 
 const MONDAY_API_URL = 'https://api.monday.com/v2';
-const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYwMDEzMDI5NywiYWFpIjoxMSwidWlkIjo5NzQyOTUwNywiaWFkIjoiMjAyNS0xMi0yMlQwOTowNTozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTM3NTE4NzUsInJnbiI6InVzZTEifQ.qexht75pJCU5N6nTNGoQ9WFLJsenPKXndnVGfudaRmE';
+const MONDAY_API_TOKEN = ''//'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYwMDEzMDI5NywiYWFpIjoxMSwidWlkIjo5NzQyOTUwNywiaWFkIjoiMjAyNS0xMi0yMlQwOTowNTozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTM3NTE4NzUsInJnbiI6InVzZTEifQ.qexht75pJCU5N6nTNGoQ9WFLJsenPKXndnVGfudaRmE';
 const MONDAY_BOARD_ID = '18396347159'; // Your board ID
 
 interface MondayColumn {
