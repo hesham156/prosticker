@@ -161,10 +161,69 @@
     color: #FF5722;
 }
 
-.design-modal .customer-info {
+.design-modal .customer-info,
+.design-modal .sales-data-section {
     padding: 1.5rem 2rem;
     background: linear-gradient(135deg, rgba(255, 87, 34, 0.12) 0%, rgba(255, 87, 34, 0.08) 100%);
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.design-modal .sales-data-section h3 {
+    color: #fff;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.sales-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.sales-info-grid .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sales-info-grid .info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.sales-info-grid .info-item label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.sales-info-grid .info-item span {
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.product-config,
+.custom-fields-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.product-config .config-item,
+.custom-fields-display .custom-field-item {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.product-config .config-item strong,
+.custom-fields-display .custom-field-item strong {
+    color: #FF7043;
+    margin-right: 0.35rem;
 }
 
 .design-modal .customer-info h3 {

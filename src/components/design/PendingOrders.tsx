@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { updateOrderWithDesign } from '../../services/orderService';
 import type { Order, CustomField } from '../../services/orderService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
+import { getProductTypeById } from '../../config/productTypes';
 import CustomFieldsManager from '../common/CustomFieldsManager';
+import OrderSearch from '../common/OrderSearch';
 import '../../styles/DesignForm.css';
 
 interface DesignFormData {
@@ -30,6 +32,35 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [customFields, setCustomFields] = useState<CustomField[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Filter orders based on search term
+    const filteredOrders = useMemo(() => {
+        if (!searchTerm.trim()) return orders;
+
+        const search = searchTerm.toLowerCase();
+        return orders.filter(order => {
+            // Search in order number
+            if (order.orderNumber?.toLowerCase().includes(search)) return true;
+
+            // Search in product type
+            if (order.productType) {
+                const productType = getProductTypeById(order.productType);
+                if (productType) {
+                    if (productType.nameAr.toLowerCase().includes(search)) return true;
+                    if (productType.nameEn.toLowerCase().includes(search)) return true;
+                }
+            }
+
+            // Search in sales notes
+            if (order.salesNotes?.toLowerCase().includes(search)) return true;
+
+            // Search in assigned designer name
+            if (order.assignedDesignerName?.toLowerCase().includes(search)) return true;
+
+            return false;
+        });
+    }, [orders, searchTerm]);
 
     const onSubmit = async (data: DesignFormData) => {
         if (!selectedOrder?.id || !userData?.uid) return;
@@ -75,28 +106,60 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
         );
     }
 
+    if (filteredOrders.length === 0 && searchTerm) {
+        return (
+            <div className="pending-orders">
+                <OrderSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+                <div className="empty-state">
+                    <p>لا توجد نتائج للبحث "{searchTerm}"</p>
+                    <p>No results found for "{searchTerm}"</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="pending-orders">
+            <OrderSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
             <div className="orders-grid">
-                {orders.map((order) => (
-                    <div key={order.id} className={`order-card ${selectedOrder?.id === order.id ? 'selected' : ''}`}>
-                        <div className="order-info">
-                            <h3>{order.customerName}</h3>
-                            <p className="order-type">{order.orderType}</p>
-                            <p><strong>الكمية / Quantity:</strong> {order.quantity}</p>
-                            <p><strong>تاريخ التسليم / Delivery:</strong> {order.deliveryDate}</p>
-                            {order.salesNotes && (
-                                <p className="notes"><strong>ملاحظات / Notes:</strong> {order.salesNotes}</p>
-                            )}
+                {filteredOrders.map((order) => {
+                    const productType = getProductTypeById(order.productType || '');
+                    return (
+                        <div key={order.id} className={`order-card ${selectedOrder?.id === order.id ? 'selected' : ''}`}>
+                            <div className="order-info">
+                                {/* Order Number */}
+                                <h3>#{order.orderNumber}</h3>
+
+                                {/* Product Type */}
+                                {productType && (
+                                    <p className="order-type">
+                                        <strong>{productType.nameAr} / {productType.nameEn}</strong>
+                                    </p>
+                                )}
+
+                                {/* Basic Info */}
+                                <p><strong>الكمية / Quantity:</strong> {order.quantity}</p>
+                                <p><strong>تاريخ التسليم / Delivery:</strong> {order.deliveryDate}</p>
+
+                                {/* Assigned Designer */}
+                                {order.assignedDesignerName && (
+                                    <p><strong>المصمم المسؤول / Designer:</strong> {order.assignedDesignerName}</p>
+                                )}
+
+                                {/* Sales Notes */}
+                                {order.salesNotes && (
+                                    <p className="notes"><strong>ملاحظات المبيعات / Sales Notes:</strong> {order.salesNotes}</p>
+                                )}
+                            </div>
+                            <button
+                                className="btn-design"
+                                onClick={() => setSelectedOrder(order)}
+                            >
+                                بدء التصميم / Start Design
+                            </button>
                         </div>
-                        <button
-                            className="btn-design"
-                            onClick={() => setSelectedOrder(order)}
-                        >
-                            بدء التصميم / Start Design
-                        </button>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {selectedOrder && createPortal(
@@ -107,9 +170,79 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
                             <button className="btn-close" onClick={() => setSelectedOrder(null)}>×</button>
                         </div>
 
-                        <div className="customer-info">
-                            <h3>{selectedOrder.customerName}</h3>
-                            <p>{selectedOrder.orderType} - {selectedOrder.quantity} وحدة</p>
+                        {/* Sales Data Section */}
+                        <div className="sales-data-section">
+                            <h3>بيانات المبيعات / Sales Data</h3>
+                            <div className="sales-info-grid">
+                                <div className="info-item">
+                                    <label>رقم الأوردر / Order Number:</label>
+                                    <span>{selectedOrder.orderNumber}</span>
+                                </div>
+
+                                {(() => {
+                                    const productType = getProductTypeById(selectedOrder.productType || '');
+                                    return productType ? (
+                                        <div className="info-item">
+                                            <label>نوع المنتج / Product Type:</label>
+                                            <span>{productType.nameAr} / {productType.nameEn}</span>
+                                        </div>
+                                    ) : null;
+                                })()}
+
+                                <div className="info-item">
+                                    <label>الكمية / Quantity:</label>
+                                    <span>{selectedOrder.quantity} وحدة</span>
+                                </div>
+
+                                <div className="info-item">
+                                    <label>تاريخ التسليم / Delivery Date:</label>
+                                    <span>{selectedOrder.deliveryDate}</span>
+                                </div>
+
+                                {selectedOrder.assignedDesignerName && (
+                                    <div className="info-item">
+                                        <label>المصمم المسؤول / Assigned Designer:</label>
+                                        <span>{selectedOrder.assignedDesignerName}</span>
+                                    </div>
+                                )}
+
+                                {selectedOrder.salesNotes && (
+                                    <div className="info-item full-width">
+                                        <label>ملاحظات المبيعات / Sales Notes:</label>
+                                        <span>{selectedOrder.salesNotes}</span>
+                                    </div>
+                                )}
+
+                                {/* Product Configuration */}
+                                {selectedOrder.productConfig && Object.keys(selectedOrder.productConfig).length > 0 && (
+                                    <div className="info-item full-width">
+                                        <label>تفاصيل المنتج / Product Details:</label>
+                                        <div className="product-config">
+                                            {Object.entries(selectedOrder.productConfig).map(([key, value]) => (
+                                                <span key={key} className="config-item">
+                                                    <strong>{key}:</strong> {String(value)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Custom Fields from Sales */}
+                                {selectedOrder.customFields && selectedOrder.customFields.filter(f => f.addedByRole === 'sales').length > 0 && (
+                                    <div className="info-item full-width">
+                                        <label>حقول إضافية من المبيعات / Sales Custom Fields:</label>
+                                        <div className="custom-fields-display">
+                                            {selectedOrder.customFields
+                                                .filter(f => f.addedByRole === 'sales')
+                                                .map((field, idx) => (
+                                                    <div key={idx} className="custom-field-item">
+                                                        <strong>{field.name}:</strong> {String(field.value)}
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <form onSubmit={handleSubmit(onSubmit)} className="design-form">

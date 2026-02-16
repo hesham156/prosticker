@@ -1,0 +1,122 @@
+.order-search-container {
+    margin-bottom: 1.5rem;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+    transition: color 0.3s ease;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.9rem 3rem 0.9rem 3rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #FF5722;
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.1);
+}
+
+.search-input:focus+.search-icon {
+    color: #FF5722;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.clear-button {
+    position: absolute;
+    right: 1rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 87, 34, 0.15);
+    border: 1px solid rgba(255, 87, 34, 0.3);
+    color: #FF7043;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.clear-button:hover {
+    background: rgba(255, 87, 34, 0.25);
+    border-color: rgba(255, 87, 34, 0.5);
+    transform: rotate(90deg);
+    color: #FF5722;
+}
+
+.search-hint {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 87, 34, 0.08);
+    border: 1px solid rgba(255, 87, 34, 0.15);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* RTL Support */
+[dir="rtl"] .search-icon {
+    left: auto;
+    right: 1rem;
+}
+
+[dir="rtl"] .clear-button {
+    right: auto;
+    left: 1rem;
+}
+
+[dir="rtl"] .search-input {
+    padding: 0.9rem 3rem 0.9rem 3rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .search-input {
+        font-size: 0.9rem;
+        padding: 0.8rem 2.8rem;
+    }
+
+    .search-hint {
+        font-size: 0.75rem;
+    }
+}
