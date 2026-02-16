@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import { createOrder } from '../../services/orderService';
 import type { CustomField } from '../../services/orderService';
@@ -8,6 +8,7 @@ import type { UserData } from '../../services/authService';
 import { PRODUCT_TYPES, getProductTypeById, shouldShowField } from '../../config/productTypes';
 import type { ProductField } from '../../config/productTypes';
 import CustomFieldsManager from '../common/CustomFieldsManager';
+import SearchableSelect from '../common/SearchableSelect';
 import '../../styles/Forms.css';
 
 interface OrderFormData {
@@ -26,7 +27,7 @@ interface OrderFormProps {
 
 const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
     const { userData } = useAuth();
-    const { register, handleSubmit, formState: { errors }, reset, watch } = useForm<OrderFormData>();
+    const { register, handleSubmit, formState: { errors }, reset, watch, control } = useForm<OrderFormData>();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -204,18 +205,26 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
             {/* Product Type Selection */}
             <div className="form-section">
                 <h4>نوع المنتج / Product Type</h4>
-                <div className="form-group">
-                    <label>اختر نوع المنتج / Select Product Type *</label>
-                    <select {...register('productType', { required: 'Product type is required' })}>
-                        <option value="">اختر نوع المنتج / Select Product Type</option>
-                        {PRODUCT_TYPES.map(pt => (
-                            <option key={pt.id} value={pt.id}>
-                                {pt.nameAr} / {pt.nameEn}
-                            </option>
-                        ))}
-                    </select>
-                    {errors.productType && <span className="error">{errors.productType.message}</span>}
-                </div>
+                <Controller
+                    name="productType"
+                    control={control}
+                    rules={{ required: 'Product type is required' }}
+                    render={({ field }) => (
+                        <SearchableSelect
+                            options={PRODUCT_TYPES.map(pt => ({
+                                value: pt.id,
+                                labelAr: pt.nameAr,
+                                labelEn: pt.nameEn
+                            }))}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            placeholder="اختر نوع المنتج / Select Product Type"
+                            label="اختر نوع المنتج / Select Product Type"
+                            error={errors.productType?.message as string}
+                            required
+                        />
+                    )}
+                />
             </div>
 
             {/* Product Configuration Fields */}
