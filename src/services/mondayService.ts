@@ -165,10 +165,10 @@ export async function testMondayConnectionWithToken(apiToken: string): Promise<{
 /**
  * Get board columns to map our data correctly
  */
-export async function getMondayBoardColumns() {
+export async function getMondayBoardColumns(boardId: string) {
     const query = `
         query {
-            boards(ids: [${MONDAY_BOARD_ID}]) {
+            boards(ids: [${boardId}]) {
                 columns {
                     id
                     title
