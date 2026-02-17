@@ -294,12 +294,20 @@ export async function createMondayItemFromOrder(
 
 /**
  * Update Monday item when order status changes
+ * @deprecated - We now create separate items per board instead of updating
  */
 export async function updateMondayItemStatus(
     mondayItemId: string,
-    newStatus: string
+    newStatus: string,
+    boardId?: string
 ): Promise<boolean> {
     try {
+        // Skip if no board ID (deprecated function)
+        if (!boardId) {
+            console.log('⏭️ Skipping Monday item update - no board ID');
+            return true;
+        }
+
         // Board status labels: {0: working on it اشتغل عليه, 1: Done تم, 2: Stuck متوقف, 5: new جديد}
         const statusMap: { [key: string]: string } = {
             'pending-design': 'new جديد',
@@ -309,10 +317,10 @@ export async function updateMondayItemStatus(
         };
 
         const mutation = `
-            mutation UpdateStatus($itemId: ID!, $columnValues: JSON!) {
+            mutation UpdateStatus($itemId: ID!, $boardId: ID!, $columnValues: JSON!) {
                 change_multiple_column_values(
                     item_id: $itemId,
-                    board_id: ${MONDAY_BOARD_ID},
+                    board_id: $boardId,
                     column_values: $columnValues
                 ) {
                     id
@@ -322,6 +330,7 @@ export async function updateMondayItemStatus(
 
         const variables = {
             itemId: mondayItemId,
+            boardId: boardId,
             columnValues: JSON.stringify({
                 status: statusMap[newStatus] || newStatus
             })
@@ -377,16 +386,29 @@ export async function addMondayNote(
 
 /**
  * Test Monday connection
+ * @deprecated - Use testMondayConnectionWithToken instead
  */
 export async function testMondayConnection(): Promise<boolean> {
     try {
+        // Load settings to get board IDs
+        const settings = await getMondaySettings();
+
+        if (!settings.enabled || !settings.apiToken) {
+            console.warn('⚠️ Monday integration not configured');
+            return false;
+        }
+
+        const boardIds = [settings.designBoardId, settings.productionBoardId]
+            .filter(Boolean)
+            .join(', ');
+
         const query = `
             query {
                 me {
                     name
                     email
                 }
-                boards(ids: [${MONDAY_BOARD_ID}]) {
+                boards(ids: [${boardIds}]) {
                     name
                     id
                 }
@@ -397,7 +419,7 @@ export async function testMondayConnection(): Promise<boolean> {
 
         console.log('✅ Monday connection successful!');
         console.log('User:', data.me);
-        console.log('Board:', data.boards[0]);
+        console.log('Boards:', data.boards);
 
         return true;
 
