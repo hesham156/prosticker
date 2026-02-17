@@ -1,0 +1,36 @@
+{
+    "event": "order.created",
+    "merchant": 123456789,
+    "created_at": "2026-02-17 09:00:00",
+    "data": {
+        "id": 5001,
+        "reference_id": 1234567,
+        "draft": false,
+        "date": {
+            "date": "2026-02-17 09:00:00"
+        },
+        "status": {
+            "name": "Under Review",
+            "slug": "under-review"
+        },
+        "payment_method": "Credit Card",
+        "currency": "SAR",
+        "amounts": {
+            "total": 350.50
+        },
+        "customer": {
+            "first_name": "أحمد",
+            "last_name": "محمد",
+            "mobile": "+966501234567",
+            "email": "ahmed@example.com"
+        },
+        "items": [
+            {
+                "name": "Custom Ribbon - White Satin",
+                "sku": "RIBBON-001",
+                "quantity": 100,
+                "price": 3.50
+            }
+        ]
+    }
+}

@@ -77,7 +77,7 @@ const ProductionQueue: React.FC<ProductionQueueProps> = ({ orders, onSelectOrder
                     <table>
                         <thead>
                             <tr>
-                                <th>العميل / Customer</th>
+                                <th>رقم الأوردر / Order #</th>
                                 <th>النوع / Type</th>
                                 <th>الكمية / Qty</th>
                                 <th>التسليم / Delivery</th>
@@ -89,12 +89,12 @@ const ProductionQueue: React.FC<ProductionQueueProps> = ({ orders, onSelectOrder
                             {filteredOrders.map((order) => (
                                 <tr key={order.id}>
                                     <td>
-                                        <div className="customer-cell">
-                                            <strong>{order.customerName}</strong>
-                                            <small>{order.customerPhone}</small>
-                                        </div>
+                                        <strong>#{order.orderNumber}</strong>
                                     </td>
-                                    <td>{order.orderType}</td>
+                                    <td>{(() => {
+                                        const productType = getProductTypeById(order.productType || '');
+                                        return productType ? `${productType.nameAr} / ${productType.nameEn}` : order.productType;
+                                    })()}</td>
                                     <td>{order.quantity}</td>
                                     <td>{order.deliveryDate}</td>
                                     <td>

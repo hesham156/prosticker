@@ -70,18 +70,49 @@
 
 .pending-section,
 .completed-section {
-    background: rgba(30, 41, 59, 0.5);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(148, 163, 184, 0.1);
-    border-radius: 16px;
-    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.6) 100%);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.pending-section::before,
+.completed-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #FF5722 0%, #FF7043 50%, #FF9800 100%);
+    opacity: 0.7;
 }
 
 .pending-section h2,
 .completed-section h2 {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     color: var(--text-primary);
-    font-size: 1.25rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(148, 163, 184, 0.1);
+}
+
+.pending-section h2::before {
+    content: '⏳';
+    font-size: 1.5rem;
+}
+
+.completed-section h2::before {
+    content: '✅';
+    font-size: 1.5rem;
 }
 
 .orders-grid {

@@ -1,39 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/common/Navbar';
 import PendingOrders from '../components/design/PendingOrders';
-import { fetchOrdersByStatus, subscribeToOrders } from '../services/orderService';
+import { subscribeToOrders } from '../services/orderService';
 import type { Order } from '../services/orderService';
 import '../styles/Dashboard.css';
+import '../styles/KanbanBoard.css';
 
 const DesignDashboard: React.FC = () => {
-    const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-    const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
+    const [allOrders, setAllOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Real-time listener for pending design orders
-        const unsubscribe = subscribeToOrders((orders) => {
-            const pending = orders.filter(order => order.status === 'pending-design');
-            setPendingOrders(pending);
+        // Real-time listener for all design-related orders
+        const unsubscribePending = subscribeToOrders((orders) => {
+            setAllOrders(prevOrders => {
+                const nonPending = prevOrders.filter(o => o.status !== 'pending-design');
+                return [...nonPending, ...orders];
+            });
             setLoading(false);
         }, 'pending-design');
 
-        loadCompletedOrders();
+        const unsubscribeProduction = subscribeToOrders((orders) => {
+            setAllOrders(prevOrders => {
+                const nonProduction = prevOrders.filter(o => o.status !== 'pending-production');
+                return [...nonProduction, ...orders];
+            });
+        }, 'pending-production');
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribePending();
+            unsubscribeProduction();
+        };
     }, []);
 
-    const loadCompletedOrders = async () => {
-        try {
-            const completed = await fetchOrdersByStatus('pending-production');
-            setCompletedOrders(completed);
-        } catch (error) {
-            console.error('Error loading completed orders:', error);
-        }
-    };
+    // Separate orders into columns
+    const newOrders = allOrders.filter(order =>
+        order.status === 'pending-design' && !order.designedBy
+    );
+
+    const inProgressOrders = allOrders.filter(order =>
+        order.status === 'pending-design' && order.designedBy
+    );
+
+    const completedOrders = allOrders.filter(order =>
+        order.status === 'pending-production'
+    );
 
     const handleOrderUpdated = () => {
-        loadCompletedOrders();
+        // Orders will auto-update via real-time listeners
     };
 
     return (
@@ -45,34 +59,66 @@ const DesignDashboard: React.FC = () => {
                     <h1>لوحة التصميم / Design Dashboard</h1>
                 </div>
 
-                <div className="design-sections">
-                    <div className="pending-section">
-                        <h2>طلبات قيد الانتظار / Pending Orders ({pendingOrders.length})</h2>
-                        {loading ? (
-                            <div className="loading">جاري التحميل...</div>
-                        ) : (
-                            <PendingOrders
-                                orders={pendingOrders}
-                                onOrderUpdated={handleOrderUpdated}
-                            />
-                        )}
-                    </div>
+                {loading ? (
+                    <div className="loading">جاري التحميل...</div>
+                ) : (
+                    <div className="kanban-board">
+                        {/* Column 1: New from Sales */}
+                        <div className="kanban-column new-column">
+                            <div className="column-header">
+                                <h2>🆕 جديد من المبيعات</h2>
+                                <span className="count-badge">{newOrders.length}</span>
+                            </div>
+                            <div className="column-content">
+                                <PendingOrders
+                                    orders={newOrders}
+                                    onOrderUpdated={handleOrderUpdated}
+                                />
+                            </div>
+                        </div>
 
-                    <div className="completed-section">
-                        <h2>تم إرسالها للإنتاج / Sent to Production ({completedOrders.length})</h2>
-                        <div className="orders-grid">
-                            {completedOrders.map(order => (
-                                <div key={order.id} className="order-card completed">
-                                    <div className="order-info">
-                                        <h3>{order.customerName}</h3>
-                                        <p className="order-type">{order.orderType}</p>
-                                    </div>
-                                    <span className="status-badge success">Sent to Production</span>
+                        {/* Column 2: In Progress */}
+                        <div className="kanban-column progress-column">
+                            <div className="column-header">
+                                <h2>⚙️ قيد التنفيذ</h2>
+                                <span className="count-badge">{inProgressOrders.length}</span>
+                            </div>
+                            <div className="column-content">
+                                <PendingOrders
+                                    orders={inProgressOrders}
+                                    onOrderUpdated={handleOrderUpdated}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Column 3: Sent to Production */}
+                        <div className="kanban-column completed-column">
+                            <div className="column-header">
+                                <h2>✅ تم التسليم للإنتاج</h2>
+                                <span className="count-badge">{completedOrders.length}</span>
+                            </div>
+                            <div className="column-content">
+                                <div className="orders-list">
+                                    {completedOrders.map(order => (
+                                        <div key={order.id} className="order-card completed">
+                                            <div className="order-info">
+                                                <h3>#{order.orderNumber}</h3>
+                                                <p className="order-type">{order.productType}</p>
+                                                <p className="delivery-date">📅 {order.deliveryDate}</p>
+                                            </div>
+                                            <span className="status-badge success">تم</span>
+                                        </div>
+                                    ))}
+                                    {completedOrders.length === 0 && (
+                                        <div className="empty-column">
+                                            <p>لا توجد طلبات مكتملة</p>
+                                        </div>
+                                    )}
                                 </div>
-                            ))}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

@@ -43,7 +43,8 @@ export interface Order {
     printingType?: 'thermal' | 'silkscreen'; // نوع الطباعة
     thermalSubType?: 'sugaris' | 'sublimation'; // نوع فرعي للحراري
     designedBy?: string;
-    designedAt?: Date | Timestamp;
+    designStartedAt?: Date | Timestamp; // When designer started working
+    designedAt?: Date | Timestamp; // When designer completed
 
     // Production Data (optional)
     productionNotes?: string;
@@ -61,7 +62,8 @@ export interface Order {
     sentToProductionAt?: Date | Timestamp;
 
     // Monday.com integration
-    mondayItemId?: string; // Store Monday item ID for future updates
+    mondayItemId?: string; // Store Monday Design Board item ID
+    mondayProductionItemId?: string; // Store Monday Production Board item ID
 }
 
 export interface CustomField {
@@ -85,6 +87,13 @@ export const createOrder = async (orderData: Partial<Order>, userId: string): Pr
             status: 'pending-design',
             sentToDesignAt: Timestamp.now()
         };
+
+        // Remove undefined fields (Firebase doesn't allow undefined values)
+        Object.keys(newOrder).forEach(key => {
+            if (newOrder[key as keyof Order] === undefined) {
+                delete newOrder[key as keyof Order];
+            }
+        });
 
         // Create order in Firebase
         const docRef = await addDoc(collection(db, 'orders'), newOrder);
@@ -129,6 +138,22 @@ export const createOrder = async (orderData: Partial<Order>, userId: string): Pr
     }
 };
 
+// Start working on design (Designer clicks "Start Design")
+export const startDesignWork = async (
+    orderId: string,
+    userId: string
+): Promise<void> => {
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, {
+            designedBy: userId,
+            designStartedAt: Timestamp.now()
+        });
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to start design work');
+    }
+};
+
 // Update order with design details (Design)
 export const updateOrderWithDesign = async (
     orderId: string,
@@ -145,16 +170,31 @@ export const updateOrderWithDesign = async (
             sentToProductionAt: Timestamp.now()
         });
 
-        // Update Monday status if item exists
-        const { updateMondayItemStatus } = await import('./mondayService');
-        const orderDoc = await getDocs(query(collection(db, 'orders'), where('__name__', '==', orderId)));
-        const order = orderDoc.docs[0]?.data() as Order;
+        // Get the updated order for Monday sync
+        const orderDoc = await getDoc(orderRef);
+        const order = { id: orderId, ...orderDoc.data() } as Order;
 
-        if (order?.mondayItemId) {
-            updateMondayItemStatus(order.mondayItemId, 'pending-production').catch((error) => {
-                console.warn('⚠️ Failed to update Monday status:', error);
-            });
-        }
+        // Sync to Monday.com Production Board (non-blocking)
+        (async () => {
+            try {
+                const { getMondaySettings, createMondayItemFromOrder } = await import('./mondayService');
+
+                const settings = await getMondaySettings();
+
+                // Create item in Production Board if integration is enabled
+                if (settings.enabled && settings.productionBoardId) {
+                    const mondayItemId = await createMondayItemFromOrder(order, settings.productionBoardId);
+
+                    if (mondayItemId) {
+                        // Update order with production Monday item ID
+                        await updateDoc(orderRef, { mondayProductionItemId: mondayItemId });
+                        console.log(`✅ Order ${orderId} synced to Production Board (Item ID: ${mondayItemId})`);
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Monday production sync failed, but order was updated successfully:', error);
+            }
+        })();
     } catch (error: any) {
         throw new Error(error.message || 'Failed to update order');
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/common/Navbar';
 import EmployeeManagement from '../components/admin/EmployeeManagement';
 import AllOrdersView from '../components/admin/AllOrdersView';
+import MondaySettings from '../components/admin/MondaySettings';
 import { fetchAllOrders } from '../services/orderService';
 import { fetchAllEmployees } from '../services/userService';
 import type { Order } from '../services/orderService';
@@ -9,7 +10,7 @@ import type { UserData } from '../services/authService';
 import '../styles/Dashboard.css';
 
 const AdminDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'orders'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'orders' | 'settings'>('overview');
     const [orders, setOrders] = useState<Order[]>([]);
     const [employees, setEmployees] = useState<UserData[]>([]);
 
@@ -69,6 +70,12 @@ const AdminDashboard: React.FC = () => {
                     >
                         جميع الطلبات / All Orders
                     </button>
+                    <button
+                        className={activeTab === 'settings' ? 'active' : ''}
+                        onClick={() => setActiveTab('settings')}
+                    >
+                        الإعدادات / Settings
+                    </button>
                 </div>
 
                 <div className="admin-content">
@@ -126,6 +133,10 @@ const AdminDashboard: React.FC = () => {
 
                     {activeTab === 'orders' && (
                         <AllOrdersView orders={orders} onOrdersChange={loadData} />
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <MondaySettings />
                     )}
                 </div>
             </div>

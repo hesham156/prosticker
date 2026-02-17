@@ -1,24 +1,106 @@
 // Monday.com Integration Service
 import type { Order } from './orderService';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+
+// Settings Interface
+export interface MondaySettings {
+    enabled: boolean;
+    apiToken: string;
+    designBoardId: string;
+    productionBoardId: string;
+    autoSync: boolean;
+    lastSync?: Date;
+    updatedAt?: Date;
+    updatedBy?: string;
+}
 
 const MONDAY_API_URL = 'https://api.monday.com/v2';
-const MONDAY_API_TOKEN = ''//'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYwMDEzMDI5NywiYWFpIjoxMSwidWlkIjo5NzQyOTUwNywiaWFkIjoiMjAyNS0xMi0yMlQwOTowNTozMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTM3NTE4NzUsInJnbiI6InVzZTEifQ.qexht75pJCU5N6nTNGoQ9WFLJsenPKXndnVGfudaRmE';
-const MONDAY_BOARD_ID = '18396347159'; // Your board ID
 
 interface MondayColumn {
     [key: string]: string | number;
 }
 
 /**
+ * Get Monday.com integration settings from Firebase
+ */
+export async function getMondaySettings(): Promise<MondaySettings> {
+    try {
+        const docRef = doc(db, 'settings', 'monday_integration');
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            // Return default settings if not configured yet
+            return {
+                enabled: false,
+                apiToken: '',
+                designBoardId: '',
+                productionBoardId: '',
+                autoSync: false
+            };
+        }
+
+        const data = docSnap.data();
+        return {
+            enabled: data?.enabled || false,
+            apiToken: data?.apiToken || '',
+            designBoardId: data?.designBoardId || '',
+            productionBoardId: data?.productionBoardId || '',
+            autoSync: data?.autoSync || false,
+            lastSync: data?.lastSync?.toDate(),
+            updatedAt: data?.updatedAt?.toDate(),
+            updatedBy: data?.updatedBy
+        };
+    } catch (error) {
+        console.error('Error fetching Monday settings:', error);
+        throw error;
+    }
+}
+
+/**
+ * Save Monday.com integration settings to Firebase
+ */
+export async function saveMondaySettings(
+    settings: MondaySettings,
+    userId: string
+): Promise<void> {
+    try {
+        const docRef = doc(db, 'settings', 'monday_integration');
+
+        await setDoc(docRef, {
+            enabled: settings.enabled,
+            apiToken: settings.apiToken,
+            designBoardId: settings.designBoardId,
+            productionBoardId: settings.productionBoardId,
+            autoSync: settings.autoSync,
+            lastSync: settings.lastSync || null,
+            updatedAt: new Date(),
+            updatedBy: userId
+        });
+    } catch (error) {
+        console.error('Error saving Monday settings:', error);
+        throw error;
+    }
+}
+
+/**
  * Send GraphQL query to Monday API
  */
-async function mondayQuery(query: string, variables?: any) {
+async function mondayQuery(query: string, variables?: any, apiToken?: string) {
     try {
+        // Load settings to get API token if not provided
+        const settings = apiToken ? null : await getMondaySettings();
+        const token = apiToken || settings?.apiToken || '';
+
+        if (!token) {
+            throw new Error('Monday API token not configured');
+        }
+
         const response = await fetch(MONDAY_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': MONDAY_API_TOKEN,
+                'Authorization': token,
                 'API-Version': '2024-10'
             },
             body: JSON.stringify({
@@ -38,6 +120,45 @@ async function mondayQuery(query: string, variables?: any) {
     } catch (error) {
         console.error('Failed to communicate with Monday:', error);
         throw error;
+    }
+}
+
+/**
+ * Test Monday.com API connection with provided token
+ */
+export async function testMondayConnectionWithToken(apiToken: string): Promise<{ success: boolean; message: string }> {
+    try {
+        const query = `
+            query {
+                me {
+                    name
+                    email
+                }
+            }
+        `;
+
+        const response = await fetch(MONDAY_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': apiToken
+            },
+            body: JSON.stringify({ query })
+        });
+
+        const result = await response.json();
+
+        if (result.errors) {
+            return { success: false, message: result.errors[0]?.message || 'Invalid API token' };
+        }
+
+        if (result.data?.me) {
+            return { success: true, message: `Connected as ${result.data.me.name}` };
+        }
+
+        return { success: false, message: 'Unable to verify connection' };
+    } catch (error: any) {
+        return { success: false, message: error.message || 'Connection failed' };
     }
 }
 
@@ -71,8 +192,41 @@ export async function createMondayItemFromOrder(
     targetBoardId?: string
 ): Promise<string | null> {
     try {
-        // Use designer's board if provided, otherwise use default board
-        const boardId = targetBoardId || MONDAY_BOARD_ID;
+        // Load Monday settings
+        const settings = await getMondaySettings();
+
+        // Check if Monday integration is enabled
+        if (!settings.enabled) {
+            console.log('⏸️ Monday integration is disabled');
+            return null;
+        }
+
+        // Check if API token is configured
+        if (!settings.apiToken) {
+            console.warn('⚠️ Monday API token not configured');
+            return null;
+        }
+
+        // Determine which board to use based on order status
+        let boardId = targetBoardId;
+
+        if (!boardId) {
+            // Use design board for new orders (pending-design status)
+            if (order.status === 'pending-design' && settings.designBoardId) {
+                boardId = settings.designBoardId;
+                console.log('📋 Using Design Board:', boardId);
+            }
+            // Use production board for production orders
+            else if ((order.status === 'pending-production' || order.status === 'in-production') && settings.productionBoardId) {
+                boardId = settings.productionBoardId;
+                console.log('🏭 Using Production Board:', boardId);
+            }
+            else {
+                console.warn('⚠️ No board ID configured for order status:', order.status);
+                return null;
+            }
+        }
+
 
         // Format the item name using order number instead of customer name
         const itemName = `${order.orderNumber} - ${order.orderType}`;
@@ -93,14 +247,14 @@ export async function createMondayItemFromOrder(
 
         if (order.status) {
             // Map status to Monday status column
-            // New board status labels: {5: جديد, 1: قيد التنفيذ, 15: جاهز للاستلام}
+            // Board status labels: {0: working on it اشتغل عليه, 1: Done تم, 2: Stuck متوقف, 5: new جديد}
             const statusMap: { [key: string]: string } = {
-                'pending-design': 'قيد التنفيذ',
-                'pending-production': 'قيد التنفيذ',
-                'in-production': 'قيد التنفيذ',
-                'completed': 'جاهز للاستلام'
+                'pending-design': 'new جديد',
+                'pending-production': 'working on it اشتغل عليه',
+                'in-production': 'working on it اشتغل عليه',
+                'completed': 'Done تم'
             };
-            columnValues['status'] = statusMap[order.status] || 'جديد';
+            columnValues['status'] = statusMap[order.status] || 'new جديد';
         }
 
         // Create the mutation
@@ -146,12 +300,12 @@ export async function updateMondayItemStatus(
     newStatus: string
 ): Promise<boolean> {
     try {
-        // New board status labels: {5: جديد, 1: قيد التنفيذ, 15: جاهز للاستلام}
+        // Board status labels: {0: working on it اشتغل عليه, 1: Done تم, 2: Stuck متوقف, 5: new جديد}
         const statusMap: { [key: string]: string } = {
-            'pending-design': 'قيد التنفيذ',
-            'pending-production': 'قيد التنفيذ',
-            'in-production': 'قيد التنفيذ',
-            'completed': 'جاهز للاستلام'
+            'pending-design': 'new جديد',
+            'pending-production': 'working on it اشتغل عليه',
+            'in-production': 'working on it اشتغل عليه',
+            'completed': 'Done تم'
         };
 
         const mutation = `

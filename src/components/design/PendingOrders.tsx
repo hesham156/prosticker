@@ -33,6 +33,7 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
     const [error, setError] = useState('');
     const [customFields, setCustomFields] = useState<CustomField[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [startingDesign, setStartingDesign] = useState(false);
 
     // Filter orders based on search term
     const filteredOrders = useMemo(() => {
@@ -97,6 +98,21 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
         }
     };
 
+    const handleStartDesign = async (order: Order) => {
+        if (!userData?.uid || !order.id) return;
+
+        try {
+            setStartingDesign(true);
+            const { startDesignWork } = await import('../../services/orderService');
+            await startDesignWork(order.id, userData.uid);
+            // Order will auto-update via real-time listener
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setStartingDesign(false);
+        }
+    };
+
     if (orders.length === 0) {
         return (
             <div className="empty-state">
@@ -150,13 +166,32 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
                                 {order.salesNotes && (
                                     <p className="notes"><strong>ملاحظات المبيعات / Sales Notes:</strong> {order.salesNotes}</p>
                                 )}
+
+                                {/* Time Tracking */}
+                                {order.designStartedAt && (
+                                    <p className="time-info">
+                                        <strong>⏰ بدأ في:</strong> {new Date(order.designStartedAt instanceof Date ? order.designStartedAt : order.designStartedAt.toDate()).toLocaleString('ar-EG')}
+                                    </p>
+                                )}
                             </div>
-                            <button
-                                className="btn-design"
-                                onClick={() => setSelectedOrder(order)}
-                            >
-                                بدء التصميم / Start Design
-                            </button>
+
+                            {/* Action Buttons */}
+                            {!order.designedBy ? (
+                                <button
+                                    className="btn-start-design"
+                                    onClick={() => handleStartDesign(order)}
+                                    disabled={startingDesign}
+                                >
+                                    {startingDesign ? '...' : '▶️ بدء التصميم'}
+                                </button>
+                            ) : (
+                                <button
+                                    className="btn-design"
+                                    onClick={() => setSelectedOrder(order)}
+                                >
+                                    ✅ إكمال وإرسال للإنتاج
+                                </button>
+                            )}
                         </div>
                     );
                 })}
