@@ -228,3 +228,113 @@
     font-size: 0.95rem;
     font-weight: 500;
 }
+
+/* ===== Time Statistics ===== */
+.time-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.time-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: all 0.3s ease;
+}
+
+.time-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.time-stat-card.design-time {
+    border-left: 4px solid #a78bfa;
+}
+
+.time-stat-card.production-time {
+    border-left: 4px solid #fbbf24;
+}
+
+.time-stat-card.ongoing {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.75;
+    }
+}
+
+.time-stat-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.time-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.time-stat-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.time-stat-value {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.time-stat-ongoing {
+    color: #fbbf24;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.time-stat-card.done .time-stat-value {
+    color: #4ade80;
+}
+
+/* Duration badges for table */
+.duration-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.duration-ongoing {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.duration-done {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.25);
+}
+
+@media (max-width: 768px) {
+    .time-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}

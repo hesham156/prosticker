@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Order } from '../../services/orderService';
+import { fetchSubItems } from '../../services/orderService';
+import type { SubItem } from '../../services/orderService';
 import ProductConfigDisplay from '../common/ProductConfigDisplay';
+import { getProductTypeById } from '../../config/productTypes';
 import '../../styles/Modal.css';
 
 interface OrderDetailsModalProps {
@@ -9,6 +12,19 @@ interface OrderDetailsModalProps {
 }
 
 const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose }) => {
+    const [subItems, setSubItems] = useState<SubItem[]>([]);
+    const [loadingSubItems, setLoadingSubItems] = useState(false);
+
+    useEffect(() => {
+        if (order.id && order.isParentOrder) {
+            setLoadingSubItems(true);
+            fetchSubItems(order.id)
+                .then(items => setSubItems(items))
+                .catch(err => console.error('Failed to fetch sub-items:', err))
+                .finally(() => setLoadingSubItems(false));
+        }
+    }, [order.id, order.isParentOrder]);
+
     const formatDate = (date: any) => {
         if (!date) return 'N/A';
         if (date.toDate) {
@@ -26,6 +42,37 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose })
         };
         return badges[status] || { label: status, class: '' };
     };
+
+    // Calculate duration between two timestamps
+    const toMs = (d: any): number | null => {
+        if (!d) return null;
+        if (d.toDate) return d.toDate().getTime();
+        return new Date(d).getTime();
+    };
+
+    const calcDuration = (start: any, end: any): { text: string; isOngoing: boolean } | null => {
+        const startMs = toMs(start);
+        if (!startMs) return null;
+        const endMs = toMs(end) || Date.now();
+        const isOngoing = !toMs(end);
+        const diffMs = endMs - startMs;
+        if (diffMs < 0) return null;
+
+        const totalMinutes = Math.floor(diffMs / 60000);
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const minutes = totalMinutes % 60;
+
+        let text = '';
+        if (days > 0) text += `${days} يوم `;
+        if (hours > 0) text += `${hours} ساعة `;
+        text += `${minutes} دقيقة`;
+
+        return { text: text.trim(), isOngoing };
+    };
+
+    const designDuration = calcDuration(order.sentToDesignAt || order.createdAt, order.designedAt);
+    const productionDuration = calcDuration(order.sentToProductionAt, order.completedAt);
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -190,6 +237,86 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose })
                                     <span className="detail-value">{order.productionNotes}</span>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Sub-Items */}
+                    {(subItems.length > 0 || loadingSubItems) && (
+                        <div className="detail-section">
+                            <h3>📎 العناصر الفرعية / Sub-Items ({subItems.length})</h3>
+                            {loadingSubItems ? (
+                                <p style={{ color: 'var(--text-secondary)' }}>جاري التحميل...</p>
+                            ) : (
+                                <div className="subitems-list">
+                                    {subItems.map((item, idx) => {
+                                        const ptConfig = getProductTypeById(item.productType);
+                                        return (
+                                            <div key={item.id || idx} className="subitem-card">
+                                                <div className="subitem-header">
+                                                    <span className="subitem-number">#{idx + 1}</span>
+                                                    <span className="subitem-product">
+                                                        {ptConfig ? `${ptConfig.nameAr} / ${ptConfig.nameEn}` : item.productType}
+                                                    </span>
+                                                    <span className={`status-badge ${getStatusBadge(item.status).class}`} style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem' }}>
+                                                        {getStatusBadge(item.status).label}
+                                                    </span>
+                                                </div>
+                                                <div className="subitem-details">
+                                                    <span>الكمية: {item.quantity}</span>
+                                                    {item.modifications && (
+                                                        <div className="subitem-modifications">
+                                                            <strong>التعديلات:</strong> {item.modifications}
+                                                        </div>
+                                                    )}
+                                                    {item.fileLinks && item.fileLinks.length > 0 && (
+                                                        <div className="subitem-links">
+                                                            <strong>الروابط:</strong>
+                                                            {item.fileLinks.map((link, i) => (
+                                                                <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="file-link-url">
+                                                                    🔗 رابط {i + 1}
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Time Statistics */}
+                    {(designDuration || productionDuration) && (
+                        <div className="detail-section">
+                            <h3>⏱️ إحصائيات الوقت / Time Statistics</h3>
+                            <div className="time-stats-grid">
+                                {designDuration && (
+                                    <div className={`time-stat-card design-time ${designDuration.isOngoing ? 'ongoing' : 'done'}`}>
+                                        <span className="time-stat-icon">🎨</span>
+                                        <div className="time-stat-info">
+                                            <span className="time-stat-label">مدة التصميم / Design Time</span>
+                                            <span className="time-stat-value">{designDuration.text}</span>
+                                            {designDuration.isOngoing && (
+                                                <span className="time-stat-ongoing">⏳ لا يزال جاري / Still ongoing</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {productionDuration && (
+                                    <div className={`time-stat-card production-time ${productionDuration.isOngoing ? 'ongoing' : 'done'}`}>
+                                        <span className="time-stat-icon">⚙️</span>
+                                        <div className="time-stat-info">
+                                            <span className="time-stat-label">مدة الانتاج / Production Time</span>
+                                            <span className="time-stat-value">{productionDuration.text}</span>
+                                            {productionDuration.isOngoing && (
+                                                <span className="time-stat-ongoing">⏳ لا يزال جاري / Still ongoing</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 

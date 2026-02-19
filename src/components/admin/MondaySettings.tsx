@@ -20,8 +20,13 @@ const MondaySettings: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
     const [showToken, setShowToken] = useState(false);
+    const [showSecret, setShowSecret] = useState(false);
+
+    // Derive the webhook URL from the current page origin
+    const webhookUrl = `${window.location.origin}/api/monday-webhook`;
 
     useEffect(() => {
         loadSettings();
@@ -82,6 +87,24 @@ const MondaySettings: React.FC = () => {
             setMessage({ type: 'error', text: error.message || 'فشل الاختبار / Test failed' });
         } finally {
             setTesting(false);
+        }
+    };
+
+    const handleCopyWebhookUrl = async () => {
+        try {
+            await navigator.clipboard.writeText(webhookUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Fallback for older browsers
+            const el = document.createElement('textarea');
+            el.value = webhookUrl;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         }
     };
 
@@ -202,6 +225,65 @@ const MondaySettings: React.FC = () => {
                         <span>{new Date(settings.lastSync).toLocaleString('ar-EG')}</span>
                     </div>
                 )}
+
+                {/* ── Reverse Sync: Monday → System ── */}
+                <hr style={{ margin: '24px 0', borderColor: 'var(--border-color, #e2e8f0)' }} />
+
+                <div className="settings-section-title" style={{ marginBottom: '12px' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '4px' }}>
+                        🔄 Webhook من Monday (الاتجاه العكسي)
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #64748b)', margin: 0 }}>
+                        لما يتغير الـ Status في Monday.com يتحدث تلقائياً في النظام
+                    </p>
+                </div>
+
+                {/* Webhook URL */}
+                <div className="form-group">
+                    <label>Webhook URL (اربطه في Monday.com)</label>
+                    <div className="input-with-button">
+                        <input
+                            type="text"
+                            readOnly
+                            value={webhookUrl}
+                            style={{ fontFamily: 'monospace', fontSize: '0.82rem', background: 'var(--input-bg-readonly, #f8fafc)' }}
+                        />
+                        <button
+                            type="button"
+                            className="btn-toggle-visibility"
+                            onClick={handleCopyWebhookUrl}
+                            title="Copy URL"
+                        >
+                            {copied ? '✅' : '📋'}
+                        </button>
+                    </div>
+                    <small className="field-hint">
+                        في Monday.com: Integrations → Webhooks → Add Webhook → الصق هذا الـ URL
+                    </small>
+                </div>
+
+                {/* Webhook Secret */}
+                <div className="form-group">
+                    <label>Webhook Secret (اختياري / Optional)</label>
+                    <div className="input-with-button">
+                        <input
+                            type={showSecret ? 'text' : 'password'}
+                            value={settings.mondayWebhookSecret || ''}
+                            onChange={(e) => setSettings({ ...settings, mondayWebhookSecret: e.target.value })}
+                            placeholder="my-secret-key-123"
+                        />
+                        <button
+                            type="button"
+                            className="btn-toggle-visibility"
+                            onClick={() => setShowSecret(!showSecret)}
+                        >
+                            {showSecret ? '🙈' : '👁️'}
+                        </button>
+                    </div>
+                    <small className="field-hint">
+                        كلمة سر اختيارية لحماية الـ Webhook — ضعها في Monday كـ Authorization header
+                    </small>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="form-actions">

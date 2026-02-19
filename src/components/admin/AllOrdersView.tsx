@@ -36,6 +36,34 @@ const AllOrdersView: React.FC<AllOrdersViewProps> = ({ orders, onOrdersChange })
         return new Date(date).toLocaleDateString('ar-EG');
     };
 
+    // Calculate duration between two timestamps
+    const toMs = (d: any): number | null => {
+        if (!d) return null;
+        if (d.toDate) return d.toDate().getTime();
+        return new Date(d).getTime();
+    };
+
+    const calcDuration = (start: any, end: any): { text: string; isOngoing: boolean } | null => {
+        const startMs = toMs(start);
+        if (!startMs) return null;
+        const endMs = toMs(end) || Date.now();
+        const isOngoing = !toMs(end);
+        const diffMs = endMs - startMs;
+        if (diffMs < 0) return null;
+
+        const totalMinutes = Math.floor(diffMs / 60000);
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const minutes = totalMinutes % 60;
+
+        let text = '';
+        if (days > 0) text += `${days}ي `;
+        if (hours > 0) text += `${hours}س `;
+        text += `${minutes}د`;
+
+        return { text: text.trim(), isOngoing };
+    };
+
     const filteredOrders = orders.filter(order => {
         const searchLower = searchTerm.toLowerCase();
         const matchesSearch =
@@ -81,6 +109,8 @@ const AllOrdersView: React.FC<AllOrdersViewProps> = ({ orders, onOrdersChange })
                             <th>الكمية / Qty</th>
                             <th>التسليم / Delivery</th>
                             <th>الحالة / Status</th>
+                            <th>مدة التصميم</th>
+                            <th>مدة الانتاج</th>
                             <th>تاريخ الإنشاء / Created</th>
                             <th>الإجراءات / Actions</th>
                         </tr>
@@ -96,6 +126,28 @@ const AllOrdersView: React.FC<AllOrdersViewProps> = ({ orders, onOrdersChange })
                                     <span className={`status-badge ${getStatusBadge(order.status).class}`}>
                                         {getStatusBadge(order.status).label}
                                     </span>
+                                </td>
+                                <td>
+                                    {(() => {
+                                        const d = calcDuration(order.sentToDesignAt || order.createdAt, order.designedAt);
+                                        if (!d) return <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>;
+                                        return (
+                                            <span className={`duration-badge ${d.isOngoing ? 'duration-ongoing' : 'duration-done'}`}>
+                                                {d.isOngoing ? '⏳' : '✅'} {d.text}
+                                            </span>
+                                        );
+                                    })()}
+                                </td>
+                                <td>
+                                    {(() => {
+                                        const d = calcDuration(order.sentToProductionAt, order.completedAt);
+                                        if (!d) return <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>;
+                                        return (
+                                            <span className={`duration-badge ${d.isOngoing ? 'duration-ongoing' : 'duration-done'}`}>
+                                                {d.isOngoing ? '⏳' : '✅'} {d.text}
+                                            </span>
+                                        );
+                                    })()}
                                 </td>
                                 <td>{formatDate(order.createdAt)}</td>
                                 <td>

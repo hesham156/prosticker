@@ -10,6 +10,7 @@ export interface MondaySettings {
     designBoardId: string;
     productionBoardId: string;
     autoSync: boolean;
+    mondayWebhookSecret?: string; // Secret to verify incoming Monday webhooks
     lastSync?: Date;
     updatedAt?: Date;
     updatedBy?: string;
@@ -47,6 +48,7 @@ export async function getMondaySettings(): Promise<MondaySettings> {
             designBoardId: data?.designBoardId || '',
             productionBoardId: data?.productionBoardId || '',
             autoSync: data?.autoSync || false,
+            mondayWebhookSecret: data?.mondayWebhookSecret || '',
             lastSync: data?.lastSync?.toDate(),
             updatedAt: data?.updatedAt?.toDate(),
             updatedBy: data?.updatedBy
@@ -73,6 +75,7 @@ export async function saveMondaySettings(
             designBoardId: settings.designBoardId,
             productionBoardId: settings.productionBoardId,
             autoSync: settings.autoSync,
+            mondayWebhookSecret: settings.mondayWebhookSecret || '',
             lastSync: settings.lastSync || null,
             updatedAt: new Date(),
             updatedBy: userId
@@ -293,8 +296,8 @@ export async function createMondayItemFromOrder(
 }
 
 /**
- * Update Monday item when order status changes
- * @deprecated - We now create separate items per board instead of updating
+ * Update Monday item status when order status changes in the system
+ * This is the System → Monday direction of the bidirectional sync.
  */
 export async function updateMondayItemStatus(
     mondayItemId: string,
@@ -302,19 +305,35 @@ export async function updateMondayItemStatus(
     boardId?: string
 ): Promise<boolean> {
     try {
-        // Skip if no board ID (deprecated function)
-        if (!boardId) {
-            console.log('⏭️ Skipping Monday item update - no board ID');
+        const settings = await getMondaySettings();
+
+        if (!settings.enabled || !settings.apiToken) {
+            console.log('⏸️ Monday integration disabled, skipping status update');
             return true;
         }
 
+        // Resolve board ID: use provided one, or try to determine from settings
+        let resolvedBoardId = boardId;
+        if (!resolvedBoardId) {
+            // Default to design board for most statuses
+            resolvedBoardId = settings.designBoardId || settings.productionBoardId;
+        }
+
+        if (!resolvedBoardId) {
+            console.warn('⚠️ No board ID available for Monday status update');
+            return false;
+        }
+
+        // Map system status → Monday status label
         // Board status labels: {0: working on it اشتغل عليه, 1: Done تم, 2: Stuck متوقف, 5: new جديد}
         const statusMap: { [key: string]: string } = {
             'pending-design': 'new جديد',
-            'pending-production': 'working on it اشتغل عليه',
+            'pending-production': 'Stuck متوقف',
             'in-production': 'working on it اشتغل عليه',
             'completed': 'Done تم'
         };
+
+        const mondayLabel = statusMap[newStatus] || newStatus;
 
         const mutation = `
             mutation UpdateStatus($itemId: ID!, $boardId: ID!, $columnValues: JSON!) {
@@ -330,15 +349,15 @@ export async function updateMondayItemStatus(
 
         const variables = {
             itemId: mondayItemId,
-            boardId: boardId,
+            boardId: resolvedBoardId,
             columnValues: JSON.stringify({
-                status: statusMap[newStatus] || newStatus
+                status: mondayLabel
             })
         };
 
         await mondayQuery(mutation, variables);
 
-        console.log(`✅ Updated Monday item ${mondayItemId} status to: ${newStatus}`);
+        console.log(`✅ Updated Monday item ${mondayItemId} status to: "${mondayLabel}" (system: ${newStatus})`);
 
         return true;
 

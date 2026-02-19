@@ -189,7 +189,7 @@
 
 @media (max-width: 1200px) {
     .kanban-board {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         height: auto;
     }
 
@@ -203,6 +203,10 @@
 }
 
 @media (max-width: 768px) {
+    .kanban-board {
+        grid-template-columns: 1fr;
+    }
+
     .column-header h2 {
         font-size: 1rem;
     }
@@ -214,5 +218,125 @@
 
     .kanban-column {
         min-height: 300px;
+    }
+}
+
+/* ===== Sales Kanban 4-Column Layout ===== */
+.sales-kanban {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Design Column */
+.design-column .column-header {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, transparent 100%);
+}
+
+.design-column .count-badge {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: #a78bfa;
+}
+
+/* Production Column */
+.production-column .column-header {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, transparent 100%);
+}
+
+.production-column .count-badge {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+}
+
+/* Order Card Status Borders */
+.orders-list .order-card.new {
+    border-left: 3px solid #60a5fa;
+}
+
+.orders-list .order-card.designing {
+    border-left: 3px solid #a78bfa;
+}
+
+.orders-list .order-card.producing {
+    border-left: 3px solid #fbbf24;
+}
+
+/* Order Card Details */
+.orders-list .order-quantity,
+.orders-list .order-date,
+.orders-list .designer-name {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin: 0.25rem 0 0 0;
+}
+
+.orders-list .designer-name {
+    color: #a78bfa;
+}
+
+/* Card Action Buttons */
+.order-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.btn-view-small,
+.btn-edit-small {
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.btn-view-small {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.btn-view-small:hover {
+    background: rgba(59, 130, 246, 0.3);
+}
+
+.btn-edit-small {
+    background: rgba(255, 159, 0, 0.15);
+    color: #FFB74D;
+    border-color: rgba(255, 159, 0, 0.3);
+}
+
+.btn-edit-small:hover {
+    background: rgba(255, 159, 0, 0.3);
+}
+
+/* Empty Column State */
+.empty-column .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.5;
+}
+
+/* Sales Kanban Responsive */
+@media (max-width: 1400px) {
+    .sales-kanban {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    .sales-kanban {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .sales-kanban {
+        grid-template-columns: 1fr;
     }
 }

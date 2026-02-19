@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { updateOrderWithDesign } from '../../services/orderService';
-import type { Order, CustomField } from '../../services/orderService';
+import { updateOrderWithDesign, fetchSubItems } from '../../services/orderService';
+import type { Order, CustomField, SubItem } from '../../services/orderService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { getProductTypeById } from '../../config/productTypes';
 import CustomFieldsManager from '../common/CustomFieldsManager';
 import OrderSearch from '../common/OrderSearch';
 import '../../styles/DesignForm.css';
+import '../../styles/SubItems.css';
 
 interface DesignFormData {
     designFileUrl: string;
@@ -34,6 +35,28 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
     const [customFields, setCustomFields] = useState<CustomField[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [startingDesign, setStartingDesign] = useState(false);
+    const [expandedOrderSubs, setExpandedOrderSubs] = useState<Record<string, SubItem[]>>({});
+    const [loadingSubs, setLoadingSubs] = useState<Record<string, boolean>>({});
+
+    const toggleSubItems = async (orderId: string) => {
+        if (expandedOrderSubs[orderId]) {
+            // Collapse
+            const newExpanded = { ...expandedOrderSubs };
+            delete newExpanded[orderId];
+            setExpandedOrderSubs(newExpanded);
+        } else {
+            // Expand & fetch
+            setLoadingSubs(prev => ({ ...prev, [orderId]: true }));
+            try {
+                const subs = await fetchSubItems(orderId);
+                setExpandedOrderSubs(prev => ({ ...prev, [orderId]: subs }));
+            } catch (err) {
+                console.error('Failed to fetch sub-items:', err);
+            } finally {
+                setLoadingSubs(prev => ({ ...prev, [orderId]: false }));
+            }
+        }
+    };
 
     // Filter orders based on search term
     const filteredOrders = useMemo(() => {
@@ -172,6 +195,58 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({ orders, onOrderUpdated })
                                     <p className="time-info">
                                         <strong>⏰ بدأ في:</strong> {new Date(order.designStartedAt instanceof Date ? order.designStartedAt : order.designStartedAt.toDate()).toLocaleString('ar-EG')}
                                     </p>
+                                )}
+
+                                {/* Sub-items expand */}
+                                {order.isParentOrder && order.subitemsCount && order.subitemsCount > 0 && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="subitem-expand-btn"
+                                            onClick={() => toggleSubItems(order.id!)}
+                                        >
+                                            {expandedOrderSubs[order.id!]
+                                                ? `▲ إخفاء العناصر الفرعية (${order.subitemsCount})`
+                                                : `▼ عرض العناصر الفرعية (${order.subitemsCount})`
+                                            }
+                                        </button>
+                                        {loadingSubs[order.id!] && (
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>جاري التحميل...</p>
+                                        )}
+                                        {expandedOrderSubs[order.id!] && (
+                                            <div className="subitems-list" style={{ marginTop: '0.5rem' }}>
+                                                {expandedOrderSubs[order.id!].map((sub, idx) => {
+                                                    const subPt = getProductTypeById(sub.productType);
+                                                    return (
+                                                        <div key={sub.id || idx} className="subitem-card">
+                                                            <div className="subitem-header">
+                                                                <span className="subitem-number">#{idx + 1}</span>
+                                                                <span className="subitem-product">
+                                                                    {subPt ? `${subPt.nameAr}` : sub.productType}
+                                                                </span>
+                                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>الكمية: {sub.quantity}</span>
+                                                            </div>
+                                                            {sub.modifications && (
+                                                                <div className="subitem-modifications">
+                                                                    <strong>التعديلات:</strong> {sub.modifications}
+                                                                </div>
+                                                            )}
+                                                            {sub.fileLinks && sub.fileLinks.length > 0 && (
+                                                                <div className="subitem-links">
+                                                                    <strong>الروابط:</strong>
+                                                                    {sub.fileLinks.map((link, i) => (
+                                                                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="file-link-url">
+                                                                            🔗 رابط {i + 1}
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
 

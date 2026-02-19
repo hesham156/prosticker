@@ -9,7 +9,8 @@ import {
     getDocs,
     onSnapshot,
     Timestamp,
-    orderBy
+    orderBy,
+    increment
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { createMondayItemFromOrder } from './mondayService';
@@ -64,6 +65,10 @@ export interface Order {
     // Monday.com integration
     mondayItemId?: string; // Store Monday Design Board item ID
     mondayProductionItemId?: string; // Store Monday Production Board item ID
+
+    // Sub-items support
+    isParentOrder?: boolean; // true if order has sub-items
+    subitemsCount?: number; // Count of sub-items
 }
 
 export interface CustomField {
@@ -236,14 +241,29 @@ export const updateOrderStatus = async (
 
         await updateDoc(orderRef, updateData);
 
-        // Update Monday status if item exists
-        const { updateMondayItemStatus } = await import('./mondayService');
+        // Update Monday status if item exists (System → Monday direction)
+        const { updateMondayItemStatus, getMondaySettings } = await import('./mondayService');
         const orderDoc = await getDocs(query(collection(db, 'orders'), where('__name__', '==', orderId)));
         const order = orderDoc.docs[0]?.data() as Order;
+        const mondaySettings = await getMondaySettings();
 
         if (order?.mondayItemId) {
-            updateMondayItemStatus(order.mondayItemId, status).catch((error) => {
-                console.warn('⚠️ Failed to update Monday status:', error);
+            updateMondayItemStatus(
+                order.mondayItemId,
+                status,
+                mondaySettings.designBoardId || undefined
+            ).catch((error) => {
+                console.warn('⚠️ Failed to update Monday design board status:', error);
+            });
+        }
+
+        if (order?.mondayProductionItemId) {
+            updateMondayItemStatus(
+                order.mondayProductionItemId,
+                status,
+                mondaySettings.productionBoardId || undefined
+            ).catch((error) => {
+                console.warn('⚠️ Failed to update Monday production board status:', error);
             });
         }
     } catch (error: any) {
@@ -338,4 +358,150 @@ export const subscribeToOrders = (
     });
 
     return unsubscribe;
+};
+
+// ===== Sub-Items (Subtasks) =====
+
+export interface SubItem {
+    id?: string;
+    productType: string;
+    productConfig?: Record<string, any>;
+    quantity: number;
+    salesNotes?: string;
+    modifications?: string;
+    fileLinks?: string[];
+    status: 'pending-design' | 'pending-production' | 'in-production' | 'completed';
+    // Design data
+    designFileUrl?: string;
+    designNotes?: string;
+    designedBy?: string;
+    designedAt?: Date | Timestamp;
+    // Timestamps
+    createdAt: Date | Timestamp;
+    createdBy?: string;
+    completedAt?: Date | Timestamp;
+}
+
+// Create a sub-item under a parent order
+export const createSubItem = async (
+    parentOrderId: string,
+    subItemData: Partial<SubItem>,
+    userId: string
+): Promise<string> => {
+    try {
+        const newSubItem: Partial<SubItem> = {
+            ...subItemData,
+            createdBy: userId,
+            createdAt: Timestamp.now(),
+            status: 'pending-design'
+        };
+
+        // Remove undefined fields
+        Object.keys(newSubItem).forEach(key => {
+            if (newSubItem[key as keyof SubItem] === undefined) {
+                delete newSubItem[key as keyof SubItem];
+            }
+        });
+
+        const subItemsRef = collection(db, 'orders', parentOrderId, 'subitems');
+        const docRef = await addDoc(subItemsRef, newSubItem);
+
+        // Update parent order metadata
+        const parentRef = doc(db, 'orders', parentOrderId);
+        await updateDoc(parentRef, {
+            isParentOrder: true,
+            subitemsCount: increment(1)
+        });
+
+        return docRef.id;
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to create sub-item');
+    }
+};
+
+// Fetch all sub-items for an order
+export const fetchSubItems = async (parentOrderId: string): Promise<SubItem[]> => {
+    try {
+        const q = query(
+            collection(db, 'orders', parentOrderId, 'subitems'),
+            orderBy('createdAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubItem));
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to fetch sub-items');
+    }
+};
+
+// Real-time listener for sub-items
+export const subscribeToSubItems = (
+    parentOrderId: string,
+    callback: (subItems: SubItem[]) => void
+): (() => void) => {
+    const q = query(
+        collection(db, 'orders', parentOrderId, 'subitems'),
+        orderBy('createdAt', 'desc')
+    );
+    return onSnapshot(q, (snapshot) => {
+        const items: SubItem[] = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as SubItem));
+        callback(items);
+    });
+};
+
+// Update a sub-item with design data
+export const updateSubItemWithDesign = async (
+    parentOrderId: string,
+    subItemId: string,
+    designData: Partial<SubItem>,
+    userId: string
+): Promise<void> => {
+    try {
+        const subItemRef = doc(db, 'orders', parentOrderId, 'subitems', subItemId);
+        await updateDoc(subItemRef, {
+            ...designData,
+            designedBy: userId,
+            designedAt: Timestamp.now(),
+            status: 'pending-production'
+        });
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to update sub-item');
+    }
+};
+
+// Update sub-item status
+export const updateSubItemStatus = async (
+    parentOrderId: string,
+    subItemId: string,
+    status: SubItem['status'],
+    userId?: string
+): Promise<void> => {
+    try {
+        const subItemRef = doc(db, 'orders', parentOrderId, 'subitems', subItemId);
+        const updateData: any = { status };
+        if (status === 'completed' && userId) {
+            updateData.completedAt = Timestamp.now();
+        }
+        await updateDoc(subItemRef, updateData);
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to update sub-item status');
+    }
+};
+
+// Find order by order number
+export const findOrderByNumber = async (orderNumber: string): Promise<Order | null> => {
+    try {
+        const q = query(
+            collection(db, 'orders'),
+            where('orderNumber', '==', orderNumber)
+        );
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return null;
+        const docData = snapshot.docs[0];
+        return { id: docData.id, ...docData.data() } as Order;
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to find order');
+    }
 };
