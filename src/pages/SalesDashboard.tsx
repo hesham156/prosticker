@@ -1,24 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/common/Navbar';
 import OrderForm from '../components/sales/OrderForm';
-import ProductConfigDisplay from '../components/common/ProductConfigDisplay';
 import EditOrderModal from '../components/common/EditOrderModal';
 import OrderDetailsModal from '../components/admin/OrderDetailsModal';
+import OrderSearch from '../components/common/OrderSearch';
 import { subscribeToOrders } from '../services/orderService';
 import type { Order } from '../services/orderService';
+import { getProductTypeById } from '../config/productTypes';
 import '../styles/Dashboard.css';
-import '../styles/KanbanBoard.css';
+import '../styles/ProductionQueue.css';
+
+type FilterType = 'all' | 'pending-design' | 'in-production' | 'completed';
 
 const SalesDashboard: React.FC = () => {
     const { userData } = useAuth();
     const [showForm, setShowForm] = useState(false);
     const [allOrders, setAllOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<FilterType>('all');
+    const [searchTerm, setSearchTerm] = useState('');
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
     const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
 
-    // Real-time subscription for ALL orders
     useEffect(() => {
         const unsubscribe = subscribeToOrders((orders) => {
             setAllOrders(orders);
@@ -31,69 +35,51 @@ const SalesDashboard: React.FC = () => {
         setShowForm(false);
     };
 
-    const formatDate = (date: any) => {
-        if (!date) return '';
-        if (date.toDate) {
-            return date.toDate().toLocaleDateString('ar-EG');
+    // Filter by tab
+    const tabFilteredOrders = useMemo(() => {
+        switch (filter) {
+            case 'pending-design':
+                return allOrders.filter(o => o.status === 'pending-design');
+            case 'in-production':
+                return allOrders.filter(o =>
+                    o.status === 'pending-production' || o.status === 'in-production'
+                );
+            case 'completed':
+                return allOrders.filter(o => o.status === 'completed');
+            default:
+                return allOrders;
         }
-        return new Date(date).toLocaleDateString('ar-EG');
+    }, [allOrders, filter]);
+
+    // Search within tab-filtered orders
+    const filteredOrders = useMemo(() => {
+        if (!searchTerm.trim()) return tabFilteredOrders;
+        const search = searchTerm.toLowerCase();
+        return tabFilteredOrders.filter(order => {
+            if (order.orderNumber?.toLowerCase().includes(search)) return true;
+            if (order.customerName?.toLowerCase().includes(search)) return true;
+            if (order.productType) {
+                const pt = getProductTypeById(order.productType);
+                if (pt) {
+                    if (pt.nameAr.toLowerCase().includes(search)) return true;
+                    if (pt.nameEn.toLowerCase().includes(search)) return true;
+                }
+            }
+            if (order.salesNotes?.toLowerCase().includes(search)) return true;
+            if (order.assignedDesignerName?.toLowerCase().includes(search)) return true;
+            return false;
+        });
+    }, [tabFilteredOrders, searchTerm]);
+
+    const getStatusBadge = (status: Order['status']) => {
+        const badges: { [key: string]: { label: string; class: string } } = {
+            'pending-design': { label: 'قيد التصميم', class: 'badge-design' },
+            'pending-production': { label: 'جاهز للإنتاج', class: 'badge-ready' },
+            'in-production': { label: 'قيد الإنتاج', class: 'badge-progress' },
+            'completed': { label: 'مكتمل', class: 'badge-complete' },
+        };
+        return badges[status] || { label: status, class: '' };
     };
-
-    // Categorize orders into 4 groups
-    const newOrders = allOrders.filter(
-        o => o.status === 'pending-design' && !o.designedBy
-    );
-    const inDesignOrders = allOrders.filter(
-        o => o.status === 'pending-design' && o.designedBy
-    );
-    const inProductionOrders = allOrders.filter(
-        o => o.status === 'pending-production' || o.status === 'in-production'
-    );
-    const completedOrders = allOrders.filter(
-        o => o.status === 'completed'
-    );
-
-    // Render order card for Kanban columns
-    const renderOrderCard = (order: Order, statusClass: string) => (
-        <div key={order.id} className={`order-card ${statusClass}`}>
-            <div className="order-info">
-                <h3>#{order.orderNumber}</h3>
-                <ProductConfigDisplay order={order} />
-                <p className="delivery-date">📅 التسليم: {order.deliveryDate}</p>
-                <p className="order-quantity">📦 الكمية: {order.quantity}</p>
-                {order.assignedDesignerName && (
-                    <p className="designer-name">🎨 المصمم: {order.assignedDesignerName}</p>
-                )}
-                <p className="order-date">🕐 {formatDate(order.createdAt)}</p>
-                {order.subitemsCount && order.subitemsCount > 0 && (
-                    <p className="subitems-badge">📎 {order.subitemsCount} عنصر فرعي</p>
-                )}
-            </div>
-            <div className="order-card-actions">
-                <button
-                    className="btn-view-small"
-                    onClick={() => setViewingOrder(order)}
-                >
-                    عرض
-                </button>
-                {order.status === 'pending-design' && !order.designedBy && (
-                    <button
-                        className="btn-edit-small"
-                        onClick={() => setEditingOrder(order)}
-                    >
-                        تعديل
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-
-    const renderEmptyState = (message: string) => (
-        <div className="empty-column">
-            <div className="empty-icon">📋</div>
-            <p>{message}</p>
-        </div>
-    );
 
     return (
         <div className="dashboard">
@@ -116,95 +102,130 @@ const SalesDashboard: React.FC = () => {
                     </div>
                 )}
 
-                {loading ? (
-                    <div className="loading">جاري التحميل...</div>
-                ) : (
-                    <div className="kanban-board sales-kanban">
-                        {/* Column 1: New Orders */}
-                        <div className="kanban-column new-column">
-                            <div className="column-header">
-                                <h2>🆕 الطلبات الجديدة</h2>
-                                <span className="count-badge">{newOrders.length}</span>
-                            </div>
-                            <div className="column-content">
-                                <div className="orders-list">
-                                    {newOrders.length > 0
-                                        ? newOrders.map(o => renderOrderCard(o, 'new'))
-                                        : renderEmptyState('لا توجد طلبات جديدة')
-                                    }
-                                </div>
-                            </div>
+                {/* Filter tabs — same pattern as Production */}
+                <div className="filter-tabs">
+                    <button
+                        className={filter === 'all' ? 'active' : ''}
+                        onClick={() => setFilter('all')}
+                    >
+                        الكل / All ({allOrders.length})
+                    </button>
+                    <button
+                        className={filter === 'pending-design' ? 'active' : ''}
+                        onClick={() => setFilter('pending-design')}
+                    >
+                        قيد التصميم / Design ({allOrders.filter(o => o.status === 'pending-design').length})
+                    </button>
+                    <button
+                        className={filter === 'in-production' ? 'active' : ''}
+                        onClick={() => setFilter('in-production')}
+                    >
+                        قيد الإنتاج / Production ({allOrders.filter(o => o.status === 'pending-production' || o.status === 'in-production').length})
+                    </button>
+                    <button
+                        className={filter === 'completed' ? 'active' : ''}
+                        onClick={() => setFilter('completed')}
+                    >
+                        مكتمل / Completed ({allOrders.filter(o => o.status === 'completed').length})
+                    </button>
+                </div>
+
+                <div className="production-content">
+                    {loading ? (
+                        <div className="loading">جاري التحميل...</div>
+                    ) : tabFilteredOrders.length === 0 ? (
+                        <div className="empty-state">
+                            <p>لا توجد طلبات</p>
+                            <p>No orders</p>
                         </div>
+                    ) : (
+                        <>
+                            <OrderSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
-                        {/* Column 2: In Design */}
-                        <div className="kanban-column design-column">
-                            <div className="column-header">
-                                <h2>🎨 قيد التصميم</h2>
-                                <span className="count-badge">{inDesignOrders.length}</span>
-                            </div>
-                            <div className="column-content">
-                                <div className="orders-list">
-                                    {inDesignOrders.length > 0
-                                        ? inDesignOrders.map(o => renderOrderCard(o, 'designing'))
-                                        : renderEmptyState('لا توجد طلبات قيد التصميم')
-                                    }
+                            {filteredOrders.length === 0 && searchTerm ? (
+                                <div className="empty-state">
+                                    <p>لا توجد نتائج للبحث "{searchTerm}"</p>
+                                    <p>No results found for "{searchTerm}"</p>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Column 3: In Production */}
-                        <div className="kanban-column production-column">
-                            <div className="column-header">
-                                <h2>⚙️ قيد الانتاج</h2>
-                                <span className="count-badge">{inProductionOrders.length}</span>
-                            </div>
-                            <div className="column-content">
-                                <div className="orders-list">
-                                    {inProductionOrders.length > 0
-                                        ? inProductionOrders.map(o => renderOrderCard(o, 'producing'))
-                                        : renderEmptyState('لا توجد طلبات قيد الانتاج')
-                                    }
+                            ) : (
+                                <div className="production-queue">
+                                    <div className="queue-table">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>رقم الأوردر / Order #</th>
+                                                    <th>النوع / Type</th>
+                                                    <th>الكمية / Qty</th>
+                                                    <th>التسليم / Delivery</th>
+                                                    <th>الحالة / Status</th>
+                                                    <th>إجراءات / Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filteredOrders.map((order) => {
+                                                    const productType = getProductTypeById(order.productType || '');
+                                                    const badge = getStatusBadge(order.status);
+                                                    return (
+                                                        <tr key={order.id}>
+                                                            <td><strong>#{order.orderNumber}</strong></td>
+                                                            <td>
+                                                                {productType
+                                                                    ? `${productType.nameAr} / ${productType.nameEn}`
+                                                                    : order.productType}
+                                                            </td>
+                                                            <td>{order.quantity}</td>
+                                                            <td>{order.deliveryDate}</td>
+                                                            <td>
+                                                                <span className={`status-badge ${badge.class}`}>
+                                                                    {badge.label}
+                                                                </span>
+                                                            </td>
+                                                            <td style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                <button
+                                                                    className="btn-view"
+                                                                    onClick={() => setViewingOrder(order)}
+                                                                >
+                                                                    عرض / View
+                                                                </button>
+                                                                {order.status === 'pending-design' && (
+                                                                    <button
+                                                                        className="btn-view"
+                                                                        style={{ background: 'var(--accent-orange, #f97316)' }}
+                                                                        onClick={() => setEditingOrder(order)}
+                                                                    >
+                                                                        تعديل / Edit
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Column 4: Completed */}
-                        <div className="kanban-column completed-column">
-                            <div className="column-header">
-                                <h2>✅ مكتمل</h2>
-                                <span className="count-badge">{completedOrders.length}</span>
-                            </div>
-                            <div className="column-content">
-                                <div className="orders-list">
-                                    {completedOrders.length > 0
-                                        ? completedOrders.map(o => renderOrderCard(o, 'completed'))
-                                        : renderEmptyState('لا توجد طلبات مكتملة')
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {viewingOrder && (
-                    <OrderDetailsModal
-                        order={viewingOrder}
-                        onClose={() => setViewingOrder(null)}
-                    />
-                )}
-
-                {editingOrder && userData && (
-                    <EditOrderModal
-                        order={editingOrder}
-                        onClose={() => setEditingOrder(null)}
-                        onSuccess={() => {
-                            setEditingOrder(null);
-                        }}
-                        userRole="sales"
-                        userId={userData.uid}
-                    />
-                )}
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
+
+            {viewingOrder && (
+                <OrderDetailsModal
+                    order={viewingOrder}
+                    onClose={() => setViewingOrder(null)}
+                />
+            )}
+
+            {editingOrder && userData && (
+                <EditOrderModal
+                    order={editingOrder}
+                    onClose={() => setEditingOrder(null)}
+                    onSuccess={() => setEditingOrder(null)}
+                    userRole="sales"
+                    userId={userData.uid}
+                />
+            )}
         </div>
     );
 };
